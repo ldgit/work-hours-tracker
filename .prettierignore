@@ -1,0 +1,9 @@
+# Ignore artifacts:
+build
+dist
+coverage
+
+# Ignore all Markdown files:
+**/*.md
+
+package-lock.json
