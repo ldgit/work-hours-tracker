@@ -1,16 +1,19 @@
 type EventType = "start-workday" | "end-workday" | "start-break" | "end-break";
 
 interface Workday {
-	configuration: Configuration;
+	id: string;
+	paidBreakDuration: number;
+	date: Date;
 	events: { time: Date; type: EventType }[];
 }
 
 interface TrackingData {
-	user: string;
 	workdays: Workday[];
 }
 
-interface Configuration {
+export interface UserSettings {
+	id: string;
+	username: string;
 	paidBreakDuration: number;
 }
 
@@ -22,7 +25,7 @@ interface Tracker {
 }
 
 export function createTracker(
-	config: Configuration,
+	settings: UserSettings,
 	data: TrackingData,
 ): Tracker {
 	return {

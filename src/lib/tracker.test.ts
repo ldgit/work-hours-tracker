@@ -3,6 +3,9 @@ import { createTracker } from "./tracker";
 
 test("can create tracker", () => {
 	expect(
-		createTracker({ paidBreakDuration: 45 }, { user: "Mark S.", workdays: [] }),
+		createTracker(
+			{ id: "", username: "Mark S.", paidBreakDuration: 45 },
+			{ workdays: [] },
+		),
 	).not.toBeFalsy();
 });
