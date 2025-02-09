@@ -1,21 +1,20 @@
 <script lang="ts">
+	import { onMount } from "svelte";
 	import { getDatabase } from "./lib/database";
 	import UserForm from "./ui/UserForm.svelte";
 
-	async function getUserCount() {
-		const db = await getDatabase();
-		const userCount = await db.getUserCount();
+	let showUserForm = $state(false);
 
-		return userCount;
-	}
+	onMount(async () => {
+		const db = await getDatabase();
+		showUserForm = (await db.getUserCount()) === 0;
+	});
 </script>
 
 <main>
 	<h1>Welcome to Work Hours Tracker</h1>
 
-	{#await getUserCount() then userCount}
-		{#if userCount === 0}
-			<UserForm />
-		{/if}
-	{/await}
+	{#if showUserForm}
+		<UserForm />
+	{/if}
 </main>
