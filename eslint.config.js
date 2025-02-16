@@ -4,6 +4,7 @@ import tseslint from "typescript-eslint";
 import eslintPluginSvelte from "eslint-plugin-svelte";
 import svelteConfig from "./svelte.config.js";
 import eslintConfigPrettier from "eslint-config-prettier";
+import * as typescriptParser from "@typescript-eslint/parser";
 
 /** @type {import('eslint').Linter.Config[]} */
 export default [
@@ -21,6 +22,14 @@ export default [
 		languageOptions: {
 			parserOptions: {
 				svelteConfig,
+				/**
+				 * Need these options so eslint can correctly check typescript syntax in .svelte files.
+				 *
+				 * @see https://sveltejs.github.io/eslint-plugin-svelte/user-guide/#parser-configuration
+				 */
+				parser: typescriptParser,
+				project: "./tsconfig.app.json",
+				extraFileExtensions: [".svelte"],
 			},
 		},
 	},
