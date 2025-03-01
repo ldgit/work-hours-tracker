@@ -2,18 +2,21 @@ import { beforeEach, afterEach, expect, test, vi } from "vitest";
 import {
 	createTracker,
 	type TimeWorked,
-	type UserSettings,
+	type User,
 	type Workday,
 } from "./tracker";
 import { subHours, subMinutes, subSeconds } from "date-fns";
 
-let defaultUserSettings: UserSettings;
+let defaultUser: User;
 
 beforeEach(() => {
-	defaultUserSettings = {
+	defaultUser = {
 		id: "66734552-01fb-4663-9c91-27a84ff07efa",
-		username: "Mark S.",
-		paidBreakDuration: 45,
+		settings: {
+			username: "Mark S.",
+			paidBreakDuration: 45,
+		},
+		trackingData: { workdays: [] },
 	};
 });
 
@@ -22,7 +25,7 @@ afterEach(() => {
 });
 
 test("tracker can start the workday", () => {
-	const tracker = createTracker(defaultUserSettings, { workdays: [] });
+	const tracker = createTracker(defaultUser);
 	expect(tracker.hasWorkdayStarted()).toStrictEqual(false);
 
 	expect(tracker.startWorkday());
@@ -33,14 +36,15 @@ test("tracker can start the workday", () => {
 
 test("tracker can start a break", () => {
 	const currentDate = new Date();
-	const tracker = createTracker(defaultUserSettings, {
+	defaultUser.trackingData = {
 		workdays: [
 			{
 				events: [{ type: "start-workday", time: subHours(currentDate, 2) }],
 				paidBreakDuration: 35,
 			},
 		],
-	});
+	};
+	const tracker = createTracker(defaultUser);
 
 	tracker.startBreak();
 
@@ -50,7 +54,7 @@ test("tracker can start a break", () => {
 
 test("tracker cannot start a break if workday has not started", () => {
 	const currentDate = new Date();
-	const tracker = createTracker(defaultUserSettings, {
+	defaultUser.trackingData = {
 		workdays: [
 			{
 				events: [
@@ -60,7 +64,8 @@ test("tracker cannot start a break if workday has not started", () => {
 				paidBreakDuration: 35,
 			},
 		],
-	});
+	};
+	const tracker = createTracker(defaultUser);
 
 	expect(() => tracker.startBreak()).toThrowError(
 		new Error("Workday has not started."),
@@ -107,7 +112,10 @@ test("tracker cannot start a break if workday has not started", () => {
 	] as { description: string; workdays: Workday[] }[]
 ).forEach(({ description, workdays }) => {
 	test(`tracker cannot end a break if one has not started (${description})`, () => {
-		const tracker = createTracker(defaultUserSettings, { workdays });
+		const tracker = createTracker({
+			...defaultUser,
+			trackingData: { workdays },
+		});
 
 		expect(() => tracker.endBreak()).toThrowError(
 			new Error("Cannot end the break if a break has not started."),
@@ -117,13 +125,16 @@ test("tracker cannot start a break if workday has not started", () => {
 
 test("tracker can end a break", () => {
 	const currentDate = new Date();
-	const tracker = createTracker(defaultUserSettings, {
-		workdays: [
-			{
-				events: [{ type: "start-workday", time: subHours(currentDate, 2) }],
-				paidBreakDuration: 35,
-			},
-		],
+	const tracker = createTracker({
+		...defaultUser,
+		trackingData: {
+			workdays: [
+				{
+					events: [{ type: "start-workday", time: subHours(currentDate, 2) }],
+					paidBreakDuration: 35,
+				},
+			],
+		},
 	});
 	tracker.startBreak();
 
@@ -134,13 +145,16 @@ test("tracker can end a break", () => {
 
 test("workday can last after midnight the next day ", () => {
 	const currentDate = new Date();
-	const tracker = createTracker(defaultUserSettings, {
-		workdays: [
-			{
-				events: [{ type: "start-workday", time: subHours(currentDate, 24) }],
-				paidBreakDuration: 35,
-			},
-		],
+	const tracker = createTracker({
+		...defaultUser,
+		trackingData: {
+			workdays: [
+				{
+					events: [{ type: "start-workday", time: subHours(currentDate, 24) }],
+					paidBreakDuration: 35,
+				},
+			],
+		},
 	});
 	expect(tracker.hasWorkdayStarted()).toStrictEqual(true);
 
@@ -151,13 +165,16 @@ test("workday can last after midnight the next day ", () => {
 
 test("tracker cannot start a new workday if previous one has not ended", () => {
 	const currentDate = new Date();
-	const tracker = createTracker(defaultUserSettings, {
-		workdays: [
-			{
-				events: [{ type: "start-workday", time: subHours(currentDate, 2) }],
-				paidBreakDuration: 35,
-			},
-		],
+	const tracker = createTracker({
+		...defaultUser,
+		trackingData: {
+			workdays: [
+				{
+					events: [{ type: "start-workday", time: subHours(currentDate, 2) }],
+					paidBreakDuration: 35,
+				},
+			],
+		},
 	});
 
 	expect(() => tracker.startWorkday()).toThrowError(
@@ -183,7 +200,10 @@ test("tracker cannot start a new workday if previous one has not ended", () => {
 	] as { description: string; workdays: Workday[] }[]
 ).forEach(({ description, workdays }) => {
 	test(`tracker cannot end a workday that has not started (${description})`, () => {
-		const tracker = createTracker(defaultUserSettings, { workdays });
+		const tracker = createTracker({
+			...defaultUser,
+			trackingData: { workdays },
+		});
 
 		expect(() => tracker.endWorkday()).toThrowError(
 			new Error("Cannot end the workday because it has not started."),
@@ -193,13 +213,16 @@ test("tracker cannot start a new workday if previous one has not ended", () => {
 
 test("tracker can end the workday", () => {
 	const currentDate = new Date();
-	const tracker = createTracker(defaultUserSettings, {
-		workdays: [
-			{
-				events: [{ type: "start-workday", time: subHours(currentDate, 2) }],
-				paidBreakDuration: 35,
-			},
-		],
+	const tracker = createTracker({
+		...defaultUser,
+		trackingData: {
+			workdays: [
+				{
+					events: [{ type: "start-workday", time: subHours(currentDate, 2) }],
+					paidBreakDuration: 35,
+				},
+			],
+		},
 	});
 	expect(tracker.hasWorkdayStarted()).toStrictEqual(true);
 
@@ -438,36 +461,42 @@ test("tracker can end the workday", () => {
 	] as { description: string; workdays: Workday[]; expected: TimeWorked }[]
 ).forEach(({ description, workdays, expected }) => {
 	test(`get time worked since workday started (${description})`, () => {
-		const tracker = createTracker(defaultUserSettings, { workdays });
+		const tracker = createTracker({
+			...defaultUser,
+			trackingData: { workdays },
+		});
 
 		expect(tracker.getTimeWorked()).toEqual(expected);
 	});
 });
 
 test(`getTimeWorked only returns time worked for last workday`, () => {
-	const tracker = createTracker(defaultUserSettings, {
-		workdays: [
-			{
-				events: [
-					// Workday lasted 8 hours
-					{ type: "start-workday", time: subHours(new Date(), 8) },
-					{ type: "end-workday", time: new Date() },
-				],
-				paidBreakDuration: 5,
-			},
-			// We measure this workday.
-			{
-				events: [
-					// Workday lasted 4 hours
-					{ type: "start-workday", time: subHours(new Date(), 4) },
-					// 10 minute break
-					{ type: "start-break", time: subMinutes(new Date(), 35) },
-					{ type: "end-break", time: subMinutes(new Date(), 25) },
-					{ type: "end-workday", time: new Date() },
-				],
-				paidBreakDuration: 5,
-			},
-		],
+	const tracker = createTracker({
+		...defaultUser,
+		trackingData: {
+			workdays: [
+				{
+					events: [
+						// Workday lasted 8 hours
+						{ type: "start-workday", time: subHours(new Date(), 8) },
+						{ type: "end-workday", time: new Date() },
+					],
+					paidBreakDuration: 5,
+				},
+				// We measure this workday.
+				{
+					events: [
+						// Workday lasted 4 hours
+						{ type: "start-workday", time: subHours(new Date(), 4) },
+						// 10 minute break
+						{ type: "start-break", time: subMinutes(new Date(), 35) },
+						{ type: "end-break", time: subMinutes(new Date(), 25) },
+						{ type: "end-workday", time: new Date() },
+					],
+					paidBreakDuration: 5,
+				},
+			],
+		},
 	});
 
 	expect(tracker.getTimeWorked()).toEqual({
@@ -477,14 +506,84 @@ test(`getTimeWorked only returns time worked for last workday`, () => {
 	});
 });
 
+test("tracker returns updated tracking data", () => {
+	vi.useFakeTimers();
+	const tracker = createTracker({
+		...defaultUser,
+		trackingData: { workdays: [] },
+	});
+	const expectedStartDate = new Date();
+
+	tracker.startWorkday();
+	expect(tracker.getTrackingData()).toEqual({
+		workdays: [
+			{
+				events: [{ time: expectedStartDate, type: "start-workday" }],
+				paidBreakDuration: 45,
+			},
+		],
+	});
+
+	vi.advanceTimersByTime(1000 * 60 * 30);
+	const expectedBreakStartDate = new Date();
+	tracker.startBreak();
+	expect(tracker.getTrackingData()).toEqual({
+		workdays: [
+			{
+				events: [
+					{ time: expectedStartDate, type: "start-workday" },
+					{ time: expectedBreakStartDate, type: "start-break" },
+				],
+				paidBreakDuration: 45,
+			},
+		],
+	});
+
+	vi.advanceTimersByTime(1000 * 60 * 30);
+	tracker.endBreak();
+	const expectedBreakEndDate = new Date();
+	expect(tracker.getTrackingData()).toEqual({
+		workdays: [
+			{
+				events: [
+					{ time: expectedStartDate, type: "start-workday" },
+					{ time: expectedBreakStartDate, type: "start-break" },
+					{ time: expectedBreakEndDate, type: "end-break" },
+				],
+				paidBreakDuration: 45,
+			},
+		],
+	});
+
+	vi.advanceTimersByTime(1000 * 60 * 30);
+	tracker.endWorkday();
+	const expectedEndDate = new Date();
+	expect(tracker.getTrackingData()).toEqual({
+		workdays: [
+			{
+				events: [
+					{ time: expectedStartDate, type: "start-workday" },
+					{ time: expectedBreakStartDate, type: "start-break" },
+					{ time: expectedBreakEndDate, type: "end-break" },
+					{ time: expectedEndDate, type: "end-workday" },
+				],
+				paidBreakDuration: 45,
+			},
+		],
+	});
+});
+
 test("trackers can exchange tracking data", () => {
-	const oldTracker = createTracker(defaultUserSettings, { workdays: [] });
+	const oldTracker = createTracker({
+		...defaultUser,
+		trackingData: { workdays: [] },
+	});
 	expect(oldTracker.startWorkday());
 
-	const newTracker = createTracker(
-		defaultUserSettings,
-		oldTracker.getTrackingData(),
-	);
+	const newTracker = createTracker({
+		...defaultUser,
+		trackingData: oldTracker.getTrackingData(),
+	});
 
 	expect(newTracker.hasWorkdayStarted()).toStrictEqual(true);
 	expect(newTracker.hasBreakStarted()).toStrictEqual(false);
@@ -493,10 +592,8 @@ test("trackers can exchange tracking data", () => {
 test("full work day with breaks test", () => {
 	vi.useFakeTimers();
 	vi.setSystemTime(new Date(2024, 4, 1, 8, 0, 0));
-	const tracker = createTracker(
-		{ ...defaultUserSettings, paidBreakDuration: 45 },
-		{ workdays: [] },
-	);
+	defaultUser.settings.paidBreakDuration = 45;
+	const tracker = createTracker(defaultUser);
 
 	tracker.startWorkday();
 	expect(tracker.hasWorkdayStarted()).toStrictEqual(true);

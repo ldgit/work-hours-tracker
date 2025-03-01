@@ -1,20 +1,21 @@
 <script lang="ts">
-	import { onMount } from "svelte";
-	import { getDatabase } from "./lib/database";
 	import UserForm from "./ui/UserForm.svelte";
+	import { type User } from "./lib/tracker";
+	import WorkdayForm from "./ui/WorkdayForm.svelte";
 
-	let showUserForm = $state(false);
+	let user: User | null = $state(null);
 
-	onMount(async () => {
-		const db = await getDatabase();
-		showUserForm = (await db.getUserCount()) === 0;
-	});
+	function setSelectedUser(selectedUser: User) {
+		user = selectedUser;
+	}
 </script>
 
 <main>
-	<h1>Welcome to Work Hours Tracker</h1>
+	<h1>Welcome {user ? user.settings.username : "to Work Hours Tracker"}</h1>
 
-	{#if showUserForm}
-		<UserForm />
+	{#if !user}
+		<UserForm onSubmit={setSelectedUser} />
+	{:else}
+		<WorkdayForm {user} />
 	{/if}
 </main>

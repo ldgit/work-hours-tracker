@@ -2,6 +2,12 @@ import { differenceInSeconds } from "date-fns";
 
 type EventType = "start-workday" | "end-workday" | "start-break" | "end-break";
 
+export interface User {
+	id: string;
+	settings: Settings;
+	trackingData: TrackingData;
+}
+
 export interface WorkdayEvent {
 	time: Date;
 	type: EventType;
@@ -12,12 +18,11 @@ export interface Workday {
 	events: WorkdayEvent[];
 }
 
-interface TrackingData {
+export interface TrackingData {
 	workdays: Workday[];
 }
 
-export interface UserSettings {
-	id: string;
+export interface Settings {
 	username: string;
 	paidBreakDuration: number;
 }
@@ -42,10 +47,9 @@ interface Tracker {
 	getTimeWorked(): TimeWorked;
 }
 
-export function createTracker(
-	settings: UserSettings,
-	data: TrackingData,
-): Tracker {
+export function createTracker(user: User): Tracker {
+	const data = user.trackingData;
+
 	return {
 		startWorkday() {
 			if (hasWorkdayStarted(data)) {
@@ -55,7 +59,7 @@ export function createTracker(
 			}
 
 			data.workdays.push({
-				paidBreakDuration: settings.paidBreakDuration,
+				paidBreakDuration: user.settings.paidBreakDuration,
 				events: [{ type: "start-workday", time: new Date() }],
 			});
 		},

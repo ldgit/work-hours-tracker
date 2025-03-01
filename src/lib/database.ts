@@ -1,16 +1,17 @@
 import { v4 as uuidv4 } from "uuid";
-import type { UserSettings } from "./tracker";
+import type { Settings, User } from "./tracker";
 
 /**
  * Used to access local database data.
  */
 interface Database {
-	insertUser(user: NewUserData): Promise<boolean>;
-	getAllUsers(): Promise<UserSettings[]>;
+	insertUser(user: NewUserData): Promise<string | false>;
+	getUserById(userId: string | false): Promise<User | null>;
+	getAllUsers(): Promise<User[]>;
 	getUserCount(): Promise<number>;
 }
 
-export type NewUserData = Omit<UserSettings, "id">;
+export type NewUserData = Settings;
 
 export function getDatabase(name = "work-hours-tracker-db"): Promise<Database> {
 	let db: IDBDatabase;
@@ -30,19 +31,38 @@ export function getDatabase(name = "work-hours-tracker-db"): Promise<Database> {
 			});
 
 			resolve({
-				async insertUser(user) {
+				async insertUser(userSettings) {
 					const transaction = db.transaction(["users"], "readwrite");
 					const usersTable = transaction.objectStore("users");
-					usersTable.add({ id: uuidv4(), ...user });
+					const userId = uuidv4();
+					usersTable.add({
+						id: userId,
+						settings: userSettings,
+						trackingData: { workdays: [] },
+					});
 
 					return new Promise((resolve) => {
 						transaction.addEventListener("complete", () => {
-							resolve(true);
+							resolve(userId);
 						});
 						transaction.addEventListener("error", () => {
 							resolve(false);
 						});
 					});
+				},
+				async getUserById(userId: string | false): Promise<User | null> {
+					return new Promise((resolve) => {
+						const userRequest = db
+							.transaction(["users"], "readonly")
+							.objectStore("users")
+							.get(userId || "");
+
+						userRequest?.addEventListener("success", () => {
+							resolve(userRequest.result || null);
+						});
+					});
+
+					return null;
 				},
 				async getAllUsers() {
 					const usersRequest = db
@@ -76,7 +96,9 @@ export function getDatabase(name = "work-hours-tracker-db"): Promise<Database> {
 			const workdaysTable = db.createObjectStore("workdays", { keyPath: "id" });
 			workdaysTable.createIndex("date", "date", { unique: true });
 			const usersTable = db.createObjectStore("users", { keyPath: "id" });
-			usersTable.createIndex("username", "username", { unique: true });
+			usersTable.createIndex("settings.username", "settings.username", {
+				unique: true,
+			});
 		});
 	});
 }

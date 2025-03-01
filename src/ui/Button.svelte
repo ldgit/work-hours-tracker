@@ -1,9 +1,11 @@
 <script lang="ts">
-	const { children, ...rest } = $props();
+	import type { HTMLButtonAttributes } from "svelte/elements";
+
+	let { children, ...rest }: HTMLButtonAttributes = $props();
 </script>
 
 <button {...rest}>
-	{@render children()}
+	{@render children?.()}
 </button>
 
 <style>

@@ -2,16 +2,27 @@
 	import { getDatabase } from "../lib/database";
 	import Button from "./Button.svelte";
 
+	let { onSubmit } = $props();
+
 	let username = $state("");
 	let paidBreakDuration = $state(45);
 </script>
 
 <form
-	onsubmit={async () => {
-		(await getDatabase()).insertUser({
+	onsubmit={async (e) => {
+		// TODO won't be needed after remembering users after reload is implemented
+		e.preventDefault();
+		const db = await getDatabase();
+		const userId = await db.insertUser({
 			username,
 			paidBreakDuration,
 		});
+
+		const user = await db.getUserById(userId);
+
+		if (user) {
+			onSubmit(user);
+		}
 	}}
 >
 	<div class="inputRow">
