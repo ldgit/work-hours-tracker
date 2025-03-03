@@ -1,6 +1,10 @@
-import { differenceInSeconds } from "date-fns";
+import { differenceInSeconds, isSameDay } from "date-fns";
 
-type EventType = "start-workday" | "end-workday" | "start-break" | "end-break";
+export type EventType =
+	| "start-workday"
+	| "end-workday"
+	| "start-break"
+	| "end-break";
 
 export interface User {
 	id: string;
@@ -38,6 +42,7 @@ interface Tracker {
 	startBreak(): void;
 	endBreak(): void;
 	endWorkday(): void;
+	canStartWorkday(): boolean;
 	hasWorkdayStarted(): boolean;
 	hasBreakStarted(): boolean;
 	getTrackingData(): TrackingData;
@@ -45,12 +50,17 @@ interface Tracker {
 	 * Gets the time worked for workday in progress or last full workday.
 	 */
 	getTimeWorked(): TimeWorked;
+	onChange(handler: (user: User, type: EventType) => void): void;
 }
 
 export function createTracker(user: User): Tracker {
 	const data = user.trackingData;
+	let onChangeCallback: (user: User, type: EventType) => void = () => {};
 
 	return {
+		onChange(callback) {
+			onChangeCallback = callback;
+		},
 		startWorkday() {
 			if (hasWorkdayStarted(data)) {
 				throw new Error(
@@ -62,6 +72,7 @@ export function createTracker(user: User): Tracker {
 				paidBreakDuration: user.settings.paidBreakDuration,
 				events: [{ type: "start-workday", time: new Date() }],
 			});
+			onChangeCallback(user, "start-workday");
 		},
 		startBreak() {
 			if (!hasWorkdayStarted(data)) {
@@ -74,6 +85,7 @@ export function createTracker(user: User): Tracker {
 				time: new Date(),
 				type: "start-break",
 			});
+			onChangeCallback(user, "start-break");
 		},
 		endBreak() {
 			const currentWorkday = getLastWorkday(data);
@@ -88,6 +100,7 @@ export function createTracker(user: User): Tracker {
 			}
 
 			currentWorkday.events.push({ time: new Date(), type: "end-break" });
+			onChangeCallback(user, "end-break");
 		},
 		endWorkday() {
 			const lastWorkday = getLastWorkday(data);
@@ -102,12 +115,31 @@ export function createTracker(user: User): Tracker {
 			}
 
 			lastWorkday.events.push({ time: new Date(), type: "end-workday" });
+			onChangeCallback(user, "end-workday");
 		},
 		hasWorkdayStarted() {
 			return hasWorkdayStarted(data);
 		},
+		canStartWorkday() {
+			const currentWorkday = getLastWorkday(data);
+
+			if (!currentWorkday) {
+				return true;
+			}
+
+			const firstEvent = currentWorkday.events[0];
+			if (isSameDay(firstEvent.time, new Date())) {
+				return false;
+			}
+
+			return !hasWorkdayStarted(data);
+		},
 		hasBreakStarted() {
 			const currentWorkday = getLastWorkday(data);
+			if (!currentWorkday) {
+				return false;
+			}
+
 			const lastEvent = currentWorkday.events[currentWorkday.events.length - 1];
 
 			return lastEvent.type === "start-break";

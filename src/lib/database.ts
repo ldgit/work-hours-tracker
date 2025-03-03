@@ -6,6 +6,7 @@ import type { Settings, User } from "./tracker";
  */
 interface Database {
 	insertUser(user: NewUserData): Promise<string | false>;
+	updateUser(user: User): Promise<boolean>;
 	getUserById(userId: string | false): Promise<User | null>;
 	getAllUsers(): Promise<User[]>;
 	getUserCount(): Promise<number>;
@@ -44,6 +45,21 @@ export function getDatabase(name = "work-hours-tracker-db"): Promise<Database> {
 					return new Promise((resolve) => {
 						transaction.addEventListener("complete", () => {
 							resolve(userId);
+						});
+						transaction.addEventListener("error", () => {
+							resolve(false);
+						});
+					});
+				},
+				async updateUser(user) {
+					const transaction = db.transaction(["users"], "readwrite");
+					const usersTable = transaction.objectStore("users");
+
+					usersTable.put(user);
+
+					return new Promise((resolve) => {
+						transaction.addEventListener("complete", () => {
+							resolve(true);
 						});
 						transaction.addEventListener("error", () => {
 							resolve(false);

@@ -86,6 +86,30 @@ test("getUserById should return a user", async () => {
 	expect(user?.trackingData).toEqual({ workdays: [] });
 });
 
+test("update existing user in database", async () => {
+	const db = await getFreshDatabase();
+	const userToInsert: NewUserData = {
+		username: "Gemma S.",
+		paidBreakDuration: 30,
+	};
+	const userId = await db.insertUser(userToInsert);
+	const user = (await db.getUserById(userId)) as User;
+	user.trackingData.workdays = [
+		{
+			events: [
+				{ type: "start-workday", time: new Date(2025, 2, 2, 8, 15, 0) },
+				{ type: "start-break", time: new Date(2025, 2, 2, 11, 15, 0) },
+			],
+			paidBreakDuration: 30,
+		},
+	];
+
+	expect(await db.updateUser(user)).toStrictEqual(true);
+
+	const updatedUser = (await db.getUserById(userId)) as User;
+	expect(updatedUser).toEqual(user);
+});
+
 function byBreakDuration(a: User, b: User) {
 	return a.settings.paidBreakDuration - b.settings.paidBreakDuration;
 }

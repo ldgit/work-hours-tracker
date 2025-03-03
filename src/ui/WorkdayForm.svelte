@@ -1,17 +1,58 @@
 <script lang="ts">
-	import { createTracker } from "../lib/tracker";
+	import { createTracker, type User } from "../lib/tracker";
 	import Button from "./Button.svelte";
+	import ConfirmationModal from "./ConfirmationModal.svelte";
 
-	const { user } = $props();
-	const tracker = $state(createTracker(user));
+	const { user: userProp, onChange } = $props();
+	let user: User = $state(userProp);
+	let endWorkdayClicked = $state(false);
+
+	const tracker = createTracker(user);
+	tracker.onChange(onChange);
 
 	function startWorkday() {
 		tracker.startWorkday();
 	}
+
+	function endWorkday() {
+		endWorkdayClicked = true;
+	}
+
+	function confirmEndWorkday() {
+		endWorkdayClicked = false;
+		tracker.endWorkday();
+	}
 </script>
 
-<Button onclick={startWorkday} disabled={tracker.hasWorkdayStarted()}>
+<Button onclick={startWorkday} disabled={!tracker.canStartWorkday()}>
 	Start Workday
 </Button>
-<Button disabled={!tracker.hasWorkdayStarted()}>Start break</Button>
-<Button disabled={!tracker.hasWorkdayStarted()}>End workday</Button>
+{#if !tracker.hasBreakStarted()}
+	<Button onclick={tracker.startBreak} disabled={!tracker.hasWorkdayStarted()}>
+		Start break
+	</Button>
+{:else}
+	<Button onclick={tracker.endBreak} disabled={!tracker.hasWorkdayStarted()}>
+		End break
+	</Button>
+{/if}
+<Button
+	onclick={endWorkday}
+	disabled={!tracker.hasWorkdayStarted() || tracker.hasBreakStarted()}
+>
+	End workday
+</Button>
+
+{#if endWorkdayClicked}
+	<ConfirmationModal
+		onConfirm={confirmEndWorkday}
+		onCancel={() => {
+			endWorkdayClicked = false;
+		}}
+	>
+		{#snippet title()}Are you sure?{/snippet}
+		You will not be able to start new workday until the next day.
+		{#snippet confirmText()}Yes, I'm done for today{/snippet}
+		{#snippet cancelText()}Cancel{/snippet}
+	</ConfirmationModal>
+{/if}

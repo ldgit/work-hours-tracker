@@ -1,6 +1,7 @@
 import { beforeEach, afterEach, expect, test, vi } from "vitest";
 import {
 	createTracker,
+	type EventType,
 	type TimeWorked,
 	type User,
 	type Workday,
@@ -16,6 +17,7 @@ beforeEach(() => {
 			username: "Mark S.",
 			paidBreakDuration: 45,
 		},
+		// Default user *must* start with zero workdays worked because some tests rely on this.
 		trackingData: { workdays: [] },
 	};
 });
@@ -676,4 +678,81 @@ test("full work day with breaks test", () => {
 		minutes: 15,
 		seconds: 0,
 	} as TimeWorked);
+});
+
+test("hasBreakStarted returns false if workday has not started", () => {
+	const tracker = createTracker(defaultUser);
+	expect(tracker.hasBreakStarted()).toStrictEqual(false);
+});
+
+test("canStartWorkday returns false if workday has started", () => {
+	const tracker = createTracker(defaultUser);
+	tracker.startWorkday();
+	expect(tracker.canStartWorkday()).toStrictEqual(false);
+});
+
+test("canStartWorkday returns true if workday has not started", () => {
+	const tracker = createTracker(defaultUser);
+	expect(tracker.canStartWorkday()).toStrictEqual(true);
+});
+
+test("canStartWorkday returns false if workday has ended and next day has not begun", () => {
+	vi.useFakeTimers();
+	vi.setSystemTime(new Date(2024, 4, 1, 10, 0, 0));
+	const tracker = createTracker(defaultUser);
+	tracker.startWorkday();
+	// 8 hours has passed, it's 18:00h.
+	vi.advanceTimersByTime(1000 * 60 * 60 * 8);
+
+	tracker.endWorkday();
+
+	expect(tracker.canStartWorkday()).toStrictEqual(false);
+});
+
+test("canStartWorkday returns true if workday has ended and next day has begun", () => {
+	vi.useFakeTimers();
+	vi.setSystemTime(new Date(2024, 4, 1, 10, 0, 0));
+	const tracker = createTracker(defaultUser);
+	tracker.startWorkday();
+	// 16 hours has passed, it's 02:00h next day.
+	vi.advanceTimersByTime(1000 * 60 * 60 * 16);
+	tracker.endWorkday();
+	// 6 hours has passed, it's 08:00h next day.
+	vi.advanceTimersByTime(1000 * 60 * 60 * 6);
+
+	expect(tracker.canStartWorkday()).toStrictEqual(true);
+});
+
+test("onChange should register a callback to be called whenever tracker state updates", () => {
+	vi.useFakeTimers();
+	vi.setSystemTime(new Date(2024, 4, 1, 8, 0, 0));
+	const tracker = createTracker(defaultUser);
+	const changelog: { user: User; type: EventType }[] = [];
+	tracker.onChange((user, type) => {
+		changelog.push({ user, type });
+	});
+
+	expect(changelog).toHaveLength(0);
+	tracker.startWorkday();
+	expect(changelog).toHaveLength(1);
+	expect(changelog[0].user.trackingData.workdays[0].events).toHaveLength(1);
+	expect(changelog[0].type).toEqual("start-workday");
+
+	vi.advanceTimersByTime(1000 * 60 * 60 * 1);
+	tracker.startBreak();
+	expect(changelog).toHaveLength(2);
+	expect(changelog[1].user.trackingData.workdays[0].events).toHaveLength(2);
+	expect(changelog[1].type).toEqual("start-break");
+
+	vi.advanceTimersByTime(1000 * 60 * 60 * 1);
+	tracker.endBreak();
+	expect(changelog).toHaveLength(3);
+	expect(changelog[2].user.trackingData.workdays[0].events).toHaveLength(3);
+	expect(changelog[2].type).toEqual("end-break");
+
+	vi.advanceTimersByTime(1000 * 60 * 60 * 1);
+	tracker.endWorkday();
+	expect(changelog).toHaveLength(4);
+	expect(changelog[3].user.trackingData.workdays[0].events).toHaveLength(4);
+	expect(changelog[3].type).toEqual("end-workday");
 });

@@ -10,7 +10,6 @@
 
 <form
 	onsubmit={async (e) => {
-		// TODO won't be needed after remembering users after reload is implemented
 		e.preventDefault();
 		const db = await getDatabase();
 		const userId = await db.insertUser({
