@@ -5,7 +5,9 @@
 		$props();
 </script>
 
-<div class="modal">
+<!-- svelte-ignore a11y_click_events_have_key_events -->
+<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+<div class="modal" onclick={onCancel} role="alertdialog">
 	<div class="modalContent">
 		<h2>{@render title()}</h2>
 		<p>{@render children()}</p>

@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, Page } from "@playwright/test";
 
 test("first visit, full workday", async ({ page }) => {
 	await page.goto("/");
@@ -202,39 +202,51 @@ test("Tracking data persists through reloads", async ({ page }) => {
 	await expect(page.getByRole("button", { name: "End Break" })).toBeVisible();
 });
 
-test("Can close confirm end workday dialog by clicking the cancel button", async ({
-	page,
-}) => {
-	await page.goto("/");
-	// Fill in the initial form
-	await page.getByLabel("Username").fill("Mark S");
-	await page.getByLabel("Daily paid break").fill("30");
-	await page.getByText("Start tracking!").click();
+[
+	{
+		desc: "clicking the cancel button",
+		getCancelElement: async (page: Page) =>
+			await page.getByRole("button", { name: "Cancel" }),
+	},
+	{
+		desc: "clicking outside modal",
+		getCancelElement: async (page: Page) => await page.getByRole("alertdialog"),
+	},
+].forEach(({ desc, getCancelElement }) => {
+	test(`Can close confirm end workday dialog by ${desc}`, async ({ page }) => {
+		await page.goto("/");
+		// Fill in the initial form
+		await page.getByLabel("Username").fill("Mark S");
+		await page.getByLabel("Daily paid break").fill("30");
+		await page.getByText("Start tracking!").click();
 
-	// Workday starts at 8:05:00
-	await page.clock.setFixedTime(new Date(2025, 2, 2, 8, 5, 0));
-	await page.getByRole("button", { name: "Start Workday" }).click();
-	await page.clock.setFixedTime(new Date(2025, 2, 2, 8, 35, 0));
-	await page.getByRole("button", { name: "End Workday" }).click();
+		// Workday starts at 8:05:00
+		await page.clock.setFixedTime(new Date(2025, 2, 2, 8, 5, 0));
+		await page.getByRole("button", { name: "Start Workday" }).click();
+		await page.clock.setFixedTime(new Date(2025, 2, 2, 8, 35, 0));
+		await page.getByRole("button", { name: "End Workday" }).click();
 
-	// Confirmation modal opens.
-	await expect(
-		page.getByRole("heading", { name: "Are you sure?" }),
-	).toBeVisible();
-	await expect(page.getByRole("button", { name: "Cancel" })).toBeVisible();
+		// Confirmation modal opens.
+		await expect(
+			page.getByRole("heading", { name: "Are you sure?" }),
+		).toBeVisible();
+		await expect(page.getByRole("button", { name: "Cancel" })).toBeVisible();
 
-	await page.getByRole("button", { name: "Cancel" }).click();
+		(await getCancelElement(page)).click();
 
-	// Modal is closed
-	await expect(
-		page.getByRole("heading", { name: "Are you sure?" }),
-	).not.toBeVisible();
-	// Everything else unchanged
-	await expect(
-		page.getByRole("button", { name: "Start Workday" }),
-	).toBeDisabled();
-	await expect(page.getByRole("button", { name: "Start Break" })).toBeEnabled();
-	await expect(page.getByRole("button", { name: "End Workday" })).toBeEnabled();
+		// Modal is closed
+		await expect(
+			page.getByRole("heading", { name: "Are you sure?" }),
+		).not.toBeVisible();
+		// Everything else unchanged
+		await expect(
+			page.getByRole("button", { name: "Start Workday" }),
+		).toBeDisabled();
+		await expect(
+			page.getByRole("button", { name: "Start Break" }),
+		).toBeEnabled();
+		await expect(
+			page.getByRole("button", { name: "End Workday" }),
+		).toBeEnabled();
+	});
 });
-
-test.skip("Can close confirm end workday dialog by clicking outside it", async () => {});
