@@ -3,6 +3,7 @@
 	import Button from "./Button.svelte";
 	import ConfirmationModal from "./ConfirmationModal.svelte";
 	import WorkdayEvents from "./WorkdayEvents.svelte";
+	import WorkDuration from "./WorkDuration.svelte";
 
 	const { user: userProp, onChange } = $props();
 	let user: User = $state(userProp);
@@ -24,6 +25,10 @@
 		tracker.endWorkday();
 	}
 </script>
+
+{#if tracker.hasWorkdayStarted()}
+	<WorkDuration timeWorked={tracker.getTimeWorked()} />
+{/if}
 
 <Button onclick={startWorkday} disabled={!tracker.canStartWorkday()}>
 	Start Workday

@@ -250,3 +250,37 @@ test("Tracking data persists through reloads", async ({ page }) => {
 		).toBeEnabled();
 	});
 });
+
+test("Display hours worked so far", async ({ page }) => {
+	await page.goto("/");
+	await page.getByLabel("Username").fill("Mark S");
+	await page.getByLabel("Daily paid break").fill("30");
+	await page.getByText("Start tracking!").click();
+
+	await expect(page.getByText(/Work duration/)).not.toBeVisible();
+
+	await page.clock.setFixedTime(new Date(2025, 2, 2, 8, 5, 0));
+	await page.getByRole("button", { name: "Start Workday" }).click();
+
+	await expect(
+		page.getByText("Work duration: 0 hours, 0 minutes, 0 seconds"),
+	).toBeVisible();
+
+	await page.clock.setFixedTime(new Date(2025, 2, 2, 9, 5, 0));
+	await page.reload();
+	await expect(
+		page.getByText("Work duration: 1 hours, 0 minutes, 0 seconds"),
+	).toBeVisible();
+
+	await page.clock.setFixedTime(new Date(2025, 2, 2, 9, 15, 25));
+	await page.reload();
+	await expect(
+		page.getByText("Work duration: 1 hours, 10 minutes, 25 seconds"),
+	).toBeVisible();
+
+	await page.clock.setFixedTime(new Date(2025, 2, 2, 16, 10, 30));
+	await page.getByRole("button", { name: "End Workday" }).click();
+	await page.getByRole("button", { name: "Yes, I'm done for today" }).click();
+	await page.reload();
+	await expect(page.getByText(/Work duration/)).not.toBeVisible();
+});
