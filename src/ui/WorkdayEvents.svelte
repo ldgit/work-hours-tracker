@@ -10,7 +10,7 @@
 <ol>
 	{#each groupedEvents as { start, type, duration }}
 		<li>
-			<span>{formatDate(start, "HH:mm:ss")}</span>
+			<span class="time">{formatDate(start, "HH:mm:ss")}</span>
 			<span class="eventType">
 				{#if type === "start-workday"}
 					Workday Started
@@ -50,8 +50,13 @@
 		gap: 1rem;
 	}
 
+	.time {
+		width: 75px;
+	}
+
 	.eventType {
 		flex-grow: 2;
+		text-align: left;
 	}
 
 	.duration {
