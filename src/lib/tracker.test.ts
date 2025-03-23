@@ -2,12 +2,16 @@ import { beforeEach, afterEach, expect, test, vi } from "vitest";
 import {
 	createTracker,
 	type EventType,
-	type TimeWorked,
+	type Duration,
 	type User,
 	type Workday,
+	type WorkdayEvent,
 } from "./tracker";
 import { subHours, subMinutes, subSeconds } from "date-fns";
 
+/**
+ * Default user starts fresh with no workdays.
+ */
 let defaultUser: User;
 
 beforeEach(() => {
@@ -460,7 +464,7 @@ test("tracker can end the workday", () => {
 			],
 			expected: { hours: 3, minutes: 35, seconds: 1 },
 		},
-	] as { description: string; workdays: Workday[]; expected: TimeWorked }[]
+	] as { description: string; workdays: Workday[]; expected: Duration }[]
 ).forEach(({ description, workdays, expected }) => {
 	test(`get time worked since workday started (${description})`, () => {
 		const tracker = createTracker({
@@ -591,6 +595,47 @@ test("trackers can exchange tracking data", () => {
 	expect(newTracker.hasBreakStarted()).toStrictEqual(false);
 });
 
+test("getCurrentWorkdayEvents should return empty list for newly created tracker", () => {
+	expect(createTracker(defaultUser).getCurrentWorkdayEvents()).toEqual([]);
+});
+
+test("getCurrentWorkdayEvents should return correct list ", () => {
+	const tracker = createTracker(defaultUser);
+	vi.useFakeTimers();
+
+	vi.setSystemTime(new Date(2024, 4, 1, 9, 0, 0));
+	tracker.startWorkday();
+	vi.setSystemTime(new Date(2024, 4, 1, 9, 30, 0));
+	tracker.startBreak();
+	vi.setSystemTime(new Date(2024, 4, 1, 9, 45, 0));
+	tracker.endBreak();
+	vi.setSystemTime(new Date(2024, 4, 1, 17, 0, 0));
+	tracker.endWorkday();
+
+	expect(tracker.getCurrentWorkdayEvents()).toEqual([
+		{ type: "start-workday", time: new Date(2024, 4, 1, 9, 0, 0) },
+		{ type: "start-break", time: new Date(2024, 4, 1, 9, 30, 0) },
+		{ type: "end-break", time: new Date(2024, 4, 1, 9, 45, 0) },
+		{ type: "end-workday", time: new Date(2024, 4, 1, 17, 0, 0) },
+	] as WorkdayEvent[]);
+
+	vi.setSystemTime(new Date(2024, 4, 2, 8, 0, 0));
+	tracker.startWorkday();
+	vi.setSystemTime(new Date(2024, 4, 2, 8, 30, 0));
+	tracker.startBreak();
+	vi.setSystemTime(new Date(2024, 4, 2, 8, 45, 0));
+	tracker.endBreak();
+	vi.setSystemTime(new Date(2024, 4, 2, 16, 0, 0));
+	tracker.endWorkday();
+
+	expect(tracker.getCurrentWorkdayEvents()).toEqual([
+		{ type: "start-workday", time: new Date(2024, 4, 2, 8, 0, 0) },
+		{ type: "start-break", time: new Date(2024, 4, 2, 8, 30, 0) },
+		{ type: "end-break", time: new Date(2024, 4, 2, 8, 45, 0) },
+		{ type: "end-workday", time: new Date(2024, 4, 2, 16, 0, 0) },
+	] as WorkdayEvent[]);
+});
+
 test("full work day with breaks test", () => {
 	vi.useFakeTimers();
 	vi.setSystemTime(new Date(2024, 4, 1, 8, 0, 0));
@@ -607,7 +652,7 @@ test("full work day with breaks test", () => {
 		hours: 2,
 		minutes: 0,
 		seconds: 0,
-	} as TimeWorked);
+	} as Duration);
 
 	// Take a half-hour break.
 	tracker.startBreak();
@@ -616,7 +661,7 @@ test("full work day with breaks test", () => {
 		hours: 2,
 		minutes: 30,
 		seconds: 0,
-	} as TimeWorked);
+	} as Duration);
 	tracker.endBreak();
 
 	// Half an hour passes.
@@ -625,7 +670,7 @@ test("full work day with breaks test", () => {
 		hours: 3,
 		minutes: 0,
 		seconds: 0,
-	} as TimeWorked);
+	} as Duration);
 
 	// Take another 5 minute break
 	tracker.startBreak();
@@ -635,7 +680,7 @@ test("full work day with breaks test", () => {
 		hours: 3,
 		minutes: 5,
 		seconds: 0,
-	} as TimeWorked);
+	} as Duration);
 
 	// Hour passes.
 	vi.advanceTimersByTime(1000 * 60 * 60);
@@ -643,7 +688,7 @@ test("full work day with breaks test", () => {
 		hours: 4,
 		minutes: 5,
 		seconds: 0,
-	} as TimeWorked);
+	} as Duration);
 
 	// Take 15 minute break, total break time 5 minutes over paid break amount.
 	tracker.startBreak();
@@ -653,7 +698,7 @@ test("full work day with breaks test", () => {
 		hours: 4,
 		minutes: 15,
 		seconds: 0,
-	} as TimeWorked);
+	} as Duration);
 
 	// 4 hours pass.
 	vi.advanceTimersByTime(1000 * 60 * 60 * 4);
@@ -661,7 +706,7 @@ test("full work day with breaks test", () => {
 		hours: 8,
 		minutes: 15,
 		seconds: 0,
-	} as TimeWorked);
+	} as Duration);
 
 	// End workday.
 	tracker.endWorkday();
@@ -669,7 +714,7 @@ test("full work day with breaks test", () => {
 		hours: 8,
 		minutes: 15,
 		seconds: 0,
-	} as TimeWorked);
+	} as Duration);
 
 	// Wait another 4 hours after workday end, timeWorked should not change.
 	vi.advanceTimersByTime(1000 * 60 * 60 * 4);
@@ -677,7 +722,7 @@ test("full work day with breaks test", () => {
 		hours: 8,
 		minutes: 15,
 		seconds: 0,
-	} as TimeWorked);
+	} as Duration);
 });
 
 test("hasBreakStarted returns false if workday has not started", () => {

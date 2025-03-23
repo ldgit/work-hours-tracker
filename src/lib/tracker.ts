@@ -1,4 +1,5 @@
 import { differenceInSeconds, isSameDay } from "date-fns";
+import { getTimeWorkedFromSecondsWorked } from "./getTimeWorkedFromSeconds";
 
 export type EventType =
 	| "start-workday"
@@ -31,7 +32,7 @@ export interface Settings {
 	paidBreakDuration: number;
 }
 
-export interface TimeWorked {
+export interface Duration {
 	hours: number;
 	minutes: number;
 	seconds: number;
@@ -49,8 +50,9 @@ interface Tracker {
 	/**
 	 * Gets the time worked for workday in progress or last full workday.
 	 */
-	getTimeWorked(): TimeWorked;
+	getTimeWorked(): Duration;
 	onChange(handler: (user: User, type: EventType) => void): void;
+	getCurrentWorkdayEvents(): WorkdayEvent[];
 }
 
 export function createTracker(user: User): Tracker {
@@ -222,6 +224,15 @@ export function createTracker(user: User): Tracker {
 
 			return getTimeWorkedFromSecondsWorked(secondsWorked);
 		},
+		getCurrentWorkdayEvents() {
+			if (data.workdays.length === 0) {
+				return [];
+			}
+
+			const workdayEvents = data.workdays[data.workdays.length - 1].events;
+
+			return workdayEvents;
+		},
 	};
 }
 
@@ -242,12 +253,4 @@ function hasWorkdayStarted(data: TrackingData) {
 
 function getLastWorkday(data: TrackingData): Workday {
 	return data.workdays[data.workdays.length - 1];
-}
-
-function getTimeWorkedFromSecondsWorked(secondsWorked: number): TimeWorked {
-	const hours = Math.floor(secondsWorked / (60 * 60));
-	const minutes = Math.floor((secondsWorked - hours * 60 * 60) / 60);
-	const seconds = secondsWorked - hours * 60 * 60 - minutes * 60;
-
-	return { hours: hours, minutes: minutes, seconds: seconds };
 }

@@ -2,6 +2,7 @@
 	import { createTracker, type User } from "../lib/tracker";
 	import Button from "./Button.svelte";
 	import ConfirmationModal from "./ConfirmationModal.svelte";
+	import WorkdayEvents from "./WorkdayEvents.svelte";
 
 	const { user: userProp, onChange } = $props();
 	let user: User = $state(userProp);
@@ -42,6 +43,8 @@
 >
 	End workday
 </Button>
+
+<WorkdayEvents events={tracker.getCurrentWorkdayEvents()} />
 
 {#if endWorkdayClicked}
 	<ConfirmationModal
