@@ -1,6 +1,6 @@
 # Work Hours Tracker
 
-[![deploy](https://github.com/ldgit/work-hours-tracker/actions/workflows/deploy.yml/badge.svg?branch=main)](https://github.com/ldgit/work-hours-tracker/actions/workflows/deploy.yml)
+[![build](https://github.com/ldgit/work-hours-tracker/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/ldgit/work-hours-tracker/actions/workflows/build.yml)
 
 Track your working hours without sign-ups or sending data to some server.
 
