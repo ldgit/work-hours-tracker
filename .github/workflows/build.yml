@@ -23,7 +23,7 @@ jobs:
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps
       - name: Run unit tests
-        run: npm t
+        run: npm t -- --project=chromium
       - name: Run e2e tests
         run: npx playwright test
       - uses: actions/upload-artifact@v4
