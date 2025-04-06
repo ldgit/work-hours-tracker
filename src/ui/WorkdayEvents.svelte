@@ -8,7 +8,7 @@
 </script>
 
 <ol>
-	{#each groupedEvents as { start, end, type, duration }}
+	{#each groupedEvents as { start, end, type, duration } (start)}
 		<li>
 			<span class="time">
 				{formatDate(start, "HH:mm:ss")}
