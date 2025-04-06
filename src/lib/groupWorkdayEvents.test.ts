@@ -32,6 +32,7 @@ test("groupWorkdayEvents should return ongoing break event", () => {
 			type: "break-ongoing",
 			duration: { hours: 0, minutes: 30, seconds: 15 },
 			start: new Date(2024, 4, 2, 8, 0, 0),
+			end: new Date(2024, 4, 2, 8, 30, 15),
 		},
 	] as Event[]);
 });
@@ -50,6 +51,7 @@ test("groupWorkdayEvents should combine consecutive start and end break events i
 			type: "break",
 			duration: { hours: 0, minutes: 15, seconds: 0 },
 			start: new Date(2024, 4, 2, 8, 0, 0),
+			end: new Date(2024, 4, 2, 8, 15, 0),
 		},
 	] as Event[]);
 });

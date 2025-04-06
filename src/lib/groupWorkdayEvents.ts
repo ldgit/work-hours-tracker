@@ -7,6 +7,7 @@ type EventType = "break" | "break-ongoing" | "start-workday" | "end-workday";
 export interface Event {
 	type: EventType;
 	start: Date;
+	end?: Date;
 	/** Duration of the event, null for 'start-work' event. */
 	duration: Duration | null;
 }
@@ -27,7 +28,7 @@ export function groupWorkdayEvents(events: WorkdayEvent[]): Event[] {
 				);
 				groupedEvents = [
 					...groupedEvents,
-					{ type: "break-ongoing", duration, start: time },
+					{ type: "break-ongoing", duration, start: time, end: new Date() },
 				];
 			}
 
@@ -38,7 +39,7 @@ export function groupWorkdayEvents(events: WorkdayEvent[]): Event[] {
 				);
 				groupedEvents = [
 					...groupedEvents,
-					{ type: "break", duration, start: startBreakEvent.time },
+					{ type: "break", duration, start: startBreakEvent.time, end: time },
 				];
 			}
 

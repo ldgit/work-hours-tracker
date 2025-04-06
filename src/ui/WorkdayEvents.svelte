@@ -8,9 +8,15 @@
 </script>
 
 <ol>
-	{#each groupedEvents as { start, type, duration }}
+	{#each groupedEvents as { start, end, type, duration }}
 		<li>
-			<span class="time">{formatDate(start, "HH:mm:ss")}</span>
+			<span class="time">
+				{formatDate(start, "HH:mm:ss")}
+				{#if end}
+					<br />
+					{formatDate(end, "HH:mm:ss")}
+				{/if}
+			</span>
 			<span class="eventType">
 				{#if type === "start-workday"}
 					Workday Started
@@ -23,11 +29,13 @@
 				{/if}
 			</span>
 
-			<span class="duration">
+			<div class="duration">
 				{#if duration}
-					Duration {duration.hours}:{duration.minutes}:{duration.seconds}
+					<span>
+						Duration {duration.hours}:{duration.minutes}:{duration.seconds}
+					</span>
 				{/if}
-			</span>
+			</div>
 		</li>
 	{/each}
 </ol>
@@ -47,7 +55,8 @@
 		width: 100%;
 		display: flex;
 		justify-content: flex-start;
-		gap: 1rem;
+		gap: 0.5rem;
+		border-bottom: 1px solid #767676;
 	}
 
 	.time {
@@ -55,11 +64,15 @@
 	}
 
 	.eventType {
+		display: flex;
+		align-items: center; /* Align vertical */
 		flex-grow: 2;
 		text-align: left;
 	}
 
 	.duration {
+		display: flex;
+		align-items: center; /* Align vertical */
 		width: 135px;
 		text-align: left;
 	}
