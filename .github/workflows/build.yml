@@ -24,11 +24,11 @@ jobs:
         run: npx playwright install --with-deps
       - name: Run unit tests
         run: npm t -- --project=chromium
-      - name: Run e2e tests
-        run: npx playwright test
+      - name: Run functional tests
+        run: npm run test:functional
       - uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
         with:
           name: playwright-report
           path: playwright-report/
-          retention-days: 30
+          retention-days: 5
