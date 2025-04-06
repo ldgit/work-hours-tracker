@@ -11,6 +11,7 @@
     "check": "svelte-check --tsconfig ./tsconfig.app.json && tsc -p tsconfig.node.json && npm run code:format && npm run code:lint",
     "test": "vitest",
     "test:functional": "playwright test",
+    "test:all": "vitest && playwright test",
     "coverage": "vitest run --coverage",
     "code:lint": "eslint",
     "code:format": "prettier . --check"
