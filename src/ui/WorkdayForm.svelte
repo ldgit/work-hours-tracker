@@ -2,6 +2,8 @@
 	import { createTracker, type User } from "../lib/tracker";
 	import Button from "./Button.svelte";
 	import ConfirmationModal from "./ConfirmationModal.svelte";
+	import Favicon from "./Favicon.svelte";
+	import Status from "./Status.svelte";
 	import WorkdayEvents from "./WorkdayEvents.svelte";
 	import WorkDuration from "./WorkDuration.svelte";
 
@@ -27,16 +29,16 @@
 </script>
 
 <svelte:head>
-	<link
-		data-testid="favicon"
-		rel="icon"
-		href="{import.meta.env.BASE_URL}favicon/{tracker.hasWorkdayStarted()
+	<Favicon
+		iconName={tracker.hasWorkdayStarted()
 			? tracker.hasBreakStarted()
-				? 'on-break'
-				: 'working'
-			: 'initial'}.ico"
+				? "on-break.ico"
+				: "working.ico"
+			: "initial.ico"}
 	/>
 </svelte:head>
+
+<Status {tracker} />
 
 {#if tracker.hasWorkdayStarted()}
 	<WorkDuration timeWorked={tracker.getTimeWorked()} />

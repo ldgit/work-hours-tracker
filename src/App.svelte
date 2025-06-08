@@ -4,6 +4,7 @@
 	import { type User } from "./lib/tracker";
 	import WorkdayForm from "./ui/WorkdayForm.svelte";
 	import { getDatabase } from "./lib/database";
+	import Favicon from "./ui/Favicon.svelte";
 
 	let user: User | null = $state(null);
 
@@ -32,11 +33,7 @@
 
 <svelte:head>
 	{#if !user}
-		<link
-			data-testid="favicon"
-			rel="icon"
-			href="{import.meta.env.BASE_URL}favicon/initial.ico"
-		/>
+		<Favicon iconName="initial.ico" />
 	{/if}
 </svelte:head>
 
