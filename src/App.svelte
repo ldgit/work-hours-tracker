@@ -4,6 +4,7 @@
 	import { type User } from "./lib/tracker";
 	import WorkdayForm from "./ui/WorkdayForm.svelte";
 	import { getDatabase } from "./lib/database";
+	import Favicon from "./ui/Favicon.svelte";
 
 	let user: User | null = $state(null);
 
@@ -29,6 +30,12 @@
 		db.updateUser($state.snapshot(userToUpdate));
 	}
 </script>
+
+<svelte:head>
+	{#if !user}
+		<Favicon iconName="initial.ico" />
+	{/if}
+</svelte:head>
 
 <main>
 	<h1>Welcome {user ? user.settings.username : "to Work Hours Tracker"}</h1>

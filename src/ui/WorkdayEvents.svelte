@@ -21,7 +21,7 @@
 				{#if type === "start-workday"}
 					Workday Started
 				{:else if type === "break-ongoing"}
-					On Break
+					Break started
 				{:else if type === "break"}
 					Break
 				{:else if type === "end-workday"}
