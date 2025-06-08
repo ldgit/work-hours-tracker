@@ -30,6 +30,16 @@
 	}
 </script>
 
+<svelte:head>
+	{#if !user}
+		<link
+			data-testid="favicon"
+			rel="icon"
+			href="{import.meta.env.BASE_URL}favicon/initial.ico"
+		/>
+	{/if}
+</svelte:head>
+
 <main>
 	<h1>Welcome {user ? user.settings.username : "to Work Hours Tracker"}</h1>
 

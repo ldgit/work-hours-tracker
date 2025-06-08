@@ -4,6 +4,10 @@ test("first visit, full workday", async ({ page }) => {
 	await page.goto("/");
 
 	await expect(page).toHaveTitle("Work Hours Tracker");
+	await expect(page.getByTestId("favicon")).toHaveAttribute(
+		"href",
+		"/work-hours-tracker/favicon/initial.ico",
+	);
 	await expect(
 		page.getByRole("heading", { name: "Welcome to Work Hours Tracker" }),
 	).toBeVisible();
@@ -21,6 +25,10 @@ test("first visit, full workday", async ({ page }) => {
 	await expect(page.getByLabel("Username")).not.toBeVisible();
 	await expect(page.getByLabel("Daily paid break")).not.toBeVisible();
 	await expect(page.getByText("Start tracking!")).not.toBeVisible();
+	await expect(page.getByTestId("favicon")).toHaveAttribute(
+		"href",
+		"/work-hours-tracker/favicon/initial.ico",
+	);
 
 	// User work hours tracking interface is shown
 	await expect(
@@ -45,6 +53,10 @@ test("first visit, full workday", async ({ page }) => {
 	).toBeDisabled();
 	await expect(page.getByRole("button", { name: "Start Break" })).toBeEnabled();
 	await expect(page.getByRole("button", { name: "End Workday" })).toBeEnabled();
+	await expect(page.getByTestId("favicon")).toHaveAttribute(
+		"href",
+		"/work-hours-tracker/favicon/working.ico",
+	);
 
 	// Take a break at 8:35:00
 	await page.clock.setFixedTime(new Date(2025, 2, 2, 8, 35, 0));
@@ -60,6 +72,10 @@ test("first visit, full workday", async ({ page }) => {
 		page.getByRole("button", { name: "Start Break" }),
 	).not.toBeVisible();
 	await expect(page.getByRole("button", { name: "End Break" })).toBeVisible();
+	await expect(page.getByTestId("favicon")).toHaveAttribute(
+		"href",
+		"/work-hours-tracker/favicon/on-break.ico",
+	);
 
 	// End the break at 9:05:00
 	await page.clock.setFixedTime(new Date(2025, 2, 2, 9, 5, 0));
@@ -89,6 +105,10 @@ test("first visit, full workday", async ({ page }) => {
 		page.getByRole("button", { name: "Yes, I'm done for today" }),
 	).toBeVisible();
 	await expect(page.getByRole("button", { name: "Cancel" })).toBeVisible();
+	await expect(page.getByTestId("favicon")).toHaveAttribute(
+		"href",
+		"/work-hours-tracker/favicon/working.ico",
+	);
 
 	await page.getByRole("button", { name: "Yes, I'm done for today" }).click();
 
@@ -115,6 +135,10 @@ test("first visit, full workday", async ({ page }) => {
 	await expect(
 		page.getByRole("button", { name: "End Workday" }),
 	).toBeDisabled();
+	await expect(page.getByTestId("favicon")).toHaveAttribute(
+		"href",
+		"/work-hours-tracker/favicon/initial.ico",
+	);
 });
 
 test("User data persists through reloads", async ({ page }) => {

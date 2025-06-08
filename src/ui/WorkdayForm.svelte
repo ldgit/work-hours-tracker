@@ -26,6 +26,18 @@
 	}
 </script>
 
+<svelte:head>
+	<link
+		data-testid="favicon"
+		rel="icon"
+		href="{import.meta.env.BASE_URL}favicon/{tracker.hasWorkdayStarted()
+			? tracker.hasBreakStarted()
+				? 'on-break'
+				: 'working'
+			: 'initial'}.ico"
+	/>
+</svelte:head>
+
 {#if tracker.hasWorkdayStarted()}
 	<WorkDuration timeWorked={tracker.getTimeWorked()} />
 {/if}
