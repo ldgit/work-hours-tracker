@@ -8,3 +8,8 @@ coverage
 
 package-lock.json
 package.json
+
+# File only updated directly from https://cdn.jsdelivr.net/npm/modern-normalize/modern-normalize.css.
+#
+# @see https://github.com/sindresorhus/modern-normalize
+src/assets/modern-normalize.css
