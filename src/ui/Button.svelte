@@ -12,5 +12,6 @@
 	button {
 		margin: 0.4rem;
 		padding: 0.4rem;
+		width: var(--width, auto);
 	}
 </style>

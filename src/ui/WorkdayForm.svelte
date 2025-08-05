@@ -48,11 +48,19 @@
 	Start Workday
 </Button>
 {#if !tracker.hasBreakStarted()}
-	<Button onclick={tracker.startBreak} disabled={!tracker.hasWorkdayStarted()}>
+	<Button
+		--width="6.1rem"
+		onclick={tracker.startBreak}
+		disabled={!tracker.hasWorkdayStarted()}
+	>
 		Start break
 	</Button>
 {:else}
-	<Button onclick={tracker.endBreak} disabled={!tracker.hasWorkdayStarted()}>
+	<Button
+		--width="6.1rem"
+		onclick={tracker.endBreak}
+		disabled={!tracker.hasWorkdayStarted()}
+	>
 		End break
 	</Button>
 {/if}
