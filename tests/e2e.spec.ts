@@ -1,5 +1,8 @@
 import { test, expect, Page } from "@playwright/test";
 
+const delay = (milliseconds) =>
+	new Promise((resolve) => setTimeout(resolve, milliseconds));
+
 test("first visit, full workday", async ({ page }) => {
 	await page.goto("/");
 
@@ -328,6 +331,9 @@ test("Display hours worked so far", async ({ page }) => {
 	await page.clock.setFixedTime(new Date(2025, 2, 2, 16, 10, 30));
 	await page.getByRole("button", { name: "End Workday" }).click();
 	await page.getByRole("button", { name: "Yes, I'm done for today" }).click();
+	// Test fails without this delay in headless chromium browser for playwright
+	// versions 1.52.0 or higher.
+	await delay(10);
 	await page.reload();
 	await expect(page.getByText(/Work duration/)).not.toBeVisible();
 });
