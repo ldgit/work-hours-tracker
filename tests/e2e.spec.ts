@@ -30,18 +30,12 @@ test("first visit, full workday", async ({ page }) => {
 	await expect(page.getByText("Start tracking")).not.toBeVisible();
 
 	// User work hours tracking interface is shown
-	await expect(
-		page.getByRole("heading", { name: "Mark S" }),
-	).toBeVisible();
-	await expect(
-		page.getByRole("button", { name: "Start Work" }),
-	).toBeEnabled();
+	await expect(page.getByRole("heading", { name: "Mark S" })).toBeVisible();
+	await expect(page.getByRole("button", { name: "Start Work" })).toBeEnabled();
 	await expect(
 		page.getByRole("button", { name: "Start Break" }),
 	).toBeDisabled();
-	await expect(
-		page.getByRole("button", { name: "End Work" }),
-	).toBeDisabled();
+	await expect(page.getByRole("button", { name: "End Work" })).toBeDisabled();
 
 	await expect(page.getByText("Not working")).toBeVisible();
 	await expect(page.getByText("Not working")).toHaveCSS(
@@ -59,9 +53,7 @@ test("first visit, full workday", async ({ page }) => {
 	await page.clock.setFixedTime(new Date(2025, 2, 2, 8, 5, 0));
 	await page.getByRole("button", { name: "Start Work" }).click();
 
-	await expect(
-		page.getByRole("button", { name: "Start Work" }),
-	).toBeDisabled();
+	await expect(page.getByRole("button", { name: "Start Work" })).toBeDisabled();
 	await expect(page.getByRole("button", { name: "Start Break" })).toBeEnabled();
 	await expect(page.getByRole("button", { name: "End Work" })).toBeEnabled();
 	await expect(page.getByText("Working")).toBeVisible();
@@ -78,12 +70,8 @@ test("first visit, full workday", async ({ page }) => {
 	await page.clock.setFixedTime(new Date(2025, 2, 2, 8, 35, 0));
 	await page.getByRole("button", { name: "Start Break" }).click();
 
-	await expect(
-		page.getByRole("button", { name: "Start Work" }),
-	).toBeDisabled();
-	await expect(
-		page.getByRole("button", { name: "End Work" }),
-	).toBeDisabled();
+	await expect(page.getByRole("button", { name: "Start Work" })).toBeDisabled();
+	await expect(page.getByRole("button", { name: "End Work" })).toBeDisabled();
 	await expect(
 		page.getByRole("button", { name: "Start Break" }),
 	).not.toBeVisible();
@@ -102,9 +90,7 @@ test("first visit, full workday", async ({ page }) => {
 	await page.clock.setFixedTime(new Date(2025, 2, 2, 9, 5, 0));
 	await page.getByRole("button", { name: "End Break" }).click();
 
-	await expect(
-		page.getByRole("button", { name: "Start Work" }),
-	).toBeDisabled();
+	await expect(page.getByRole("button", { name: "Start Work" })).toBeDisabled();
 	await expect(page.getByRole("button", { name: "End Work" })).toBeEnabled();
 	await expect(page.getByRole("button", { name: "Start Break" })).toBeVisible();
 	await expect(
@@ -147,15 +133,11 @@ test("first visit, full workday", async ({ page }) => {
 	).not.toBeVisible();
 	await expect(page.getByRole("button", { name: "Cancel" })).not.toBeVisible();
 
-	await expect(
-		page.getByRole("button", { name: "Start Work" }),
-	).toBeDisabled();
+	await expect(page.getByRole("button", { name: "Start Work" })).toBeDisabled();
 	await expect(
 		page.getByRole("button", { name: "Start Break" }),
 	).toBeDisabled();
-	await expect(
-		page.getByRole("button", { name: "End Work" }),
-	).toBeDisabled();
+	await expect(page.getByRole("button", { name: "End Work" })).toBeDisabled();
 	await expect(page.getByText("Not working")).toBeVisible();
 	await expect(page.getByText("Not working")).toHaveCSS(
 		"color",
@@ -182,33 +164,21 @@ test("User data persists through reloads", async ({ page }) => {
 	await page.getByLabel("Daily paid break").fill("45");
 	await page.getByText("Start tracking").click();
 
-	await expect(
-		page.getByRole("heading", { name: "Helly R" }),
-	).toBeVisible();
-	await expect(
-		page.getByRole("button", { name: "Start Work" }),
-	).toBeEnabled();
+	await expect(page.getByRole("heading", { name: "Helly R" })).toBeVisible();
+	await expect(page.getByRole("button", { name: "Start Work" })).toBeEnabled();
 	await expect(
 		page.getByRole("button", { name: "Start Break" }),
 	).toBeDisabled();
-	await expect(
-		page.getByRole("button", { name: "End Work" }),
-	).toBeDisabled();
+	await expect(page.getByRole("button", { name: "End Work" })).toBeDisabled();
 
 	await page.reload();
 
-	await expect(
-		page.getByRole("heading", { name: "Helly R" }),
-	).toBeVisible();
-	await expect(
-		page.getByRole("button", { name: "Start Work" }),
-	).toBeEnabled();
+	await expect(page.getByRole("heading", { name: "Helly R" })).toBeVisible();
+	await expect(page.getByRole("button", { name: "Start Work" })).toBeEnabled();
 	await expect(
 		page.getByRole("button", { name: "Start Break" }),
 	).toBeDisabled();
-	await expect(
-		page.getByRole("button", { name: "End Work" }),
-	).toBeDisabled();
+	await expect(page.getByRole("button", { name: "End Work" })).toBeDisabled();
 });
 
 test("Tracking data persists through reloads", async ({ page }) => {
@@ -226,12 +196,8 @@ test("Tracking data persists through reloads", async ({ page }) => {
 	await page.clock.setFixedTime(new Date(2025, 2, 2, 8, 35, 0));
 	await page.getByRole("button", { name: "Start Break" }).click();
 	// Buttons in correct state after starting the break.
-	await expect(
-		page.getByRole("button", { name: "Start Work" }),
-	).toBeDisabled();
-	await expect(
-		page.getByRole("button", { name: "End Work" }),
-	).toBeDisabled();
+	await expect(page.getByRole("button", { name: "Start Work" })).toBeDisabled();
+	await expect(page.getByRole("button", { name: "End Work" })).toBeDisabled();
 	await expect(
 		page.getByRole("button", { name: "Start Break" }),
 	).not.toBeVisible();
@@ -240,12 +206,8 @@ test("Tracking data persists through reloads", async ({ page }) => {
 	await page.reload();
 
 	// Buttons in correct state after starting the break even after reloading.
-	await expect(
-		page.getByRole("button", { name: "Start Work" }),
-	).toBeDisabled();
-	await expect(
-		page.getByRole("button", { name: "End Work" }),
-	).toBeDisabled();
+	await expect(page.getByRole("button", { name: "Start Work" })).toBeDisabled();
+	await expect(page.getByRole("button", { name: "End Work" })).toBeDisabled();
 	await expect(
 		page.getByRole("button", { name: "Start Break" }),
 	).not.toBeVisible();
@@ -295,9 +257,7 @@ test("Tracking data persists through reloads", async ({ page }) => {
 		await expect(
 			page.getByRole("button", { name: "Start Break" }),
 		).toBeEnabled();
-		await expect(
-			page.getByRole("button", { name: "End Work" }),
-		).toBeEnabled();
+		await expect(page.getByRole("button", { name: "End Work" })).toBeEnabled();
 	});
 });
 

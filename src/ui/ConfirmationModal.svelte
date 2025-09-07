@@ -11,13 +11,16 @@
 	<div class="modalContent">
 		<h2>{@render title()}</h2>
 		<p>{@render children()}</p>
-		<Button onclick={onConfirm}>{@render confirmText()}</Button>
-		<Button onclick={onCancel}>{@render cancelText()}</Button>
+		<div class="buttons">
+			<Button onclick={onConfirm}>{@render confirmText()}</Button>
+			<Button onclick={onCancel}>{@render cancelText()}</Button>
+		</div>
 	</div>
 </div>
 
 <style>
 	h2 {
+		font-size: 1.2rem;
 		margin-top: 0.2rem;
 	}
 
@@ -28,18 +31,24 @@
 		left: 0;
 		width: 100%;
 		height: 100%;
+		padding: 0.5rem;
 	}
 
 	.modalContent {
-		margin: 15% auto;
-		background-color: #242424;
+		margin: 15vh auto;
+		background-color: var(--color-gray-800);
 		opacity: 1;
-		padding: 1rem;
-		max-width: 600px;
-		border-radius: 4px;
+		padding: 1.2rem;
+		max-width: 500px;
+		border-radius: 0.6rem;
 		box-shadow:
 			0px 11px 15px -7px rgba(0, 0, 0, 0.2),
 			0px 24px 38px 3px rgba(0, 0, 0, 0.14),
 			0px 9px 46px 8px rgba(0, 0, 0, 0.12);
+	}
+
+	.buttons {
+		display: flex;
+		gap: 0.8rem;
 	}
 </style>
