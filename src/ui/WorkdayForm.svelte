@@ -26,6 +26,8 @@
 		endWorkdayClicked = false;
 		tracker.endWorkday();
 	}
+
+	const breakButtonWidth = "5.9rem";
 </script>
 
 <svelte:head>
@@ -38,40 +40,51 @@
 	/>
 </svelte:head>
 
-<Status {tracker} />
+<section class="form">
+	<Status {tracker} />
 
-{#if tracker.hasWorkdayStarted()}
-	<WorkDuration timeWorked={tracker.getTimeWorked()} />
-{/if}
+	{#if tracker.hasWorkdayStarted()}
+		<WorkDuration timeWorked={tracker.getTimeWorked()} />
+	{/if}
 
-<Button onclick={startWorkday} disabled={!tracker.canStartWorkday()}>
-	Start Workday
-</Button>
-{#if !tracker.hasBreakStarted()}
-	<Button
-		--width="6.1rem"
-		onclick={tracker.startBreak}
-		disabled={!tracker.hasWorkdayStarted()}
-	>
-		Start break
-	</Button>
-{:else}
-	<Button
-		--width="6.1rem"
-		onclick={tracker.endBreak}
-		disabled={!tracker.hasWorkdayStarted()}
-	>
-		End break
-	</Button>
-{/if}
-<Button
-	onclick={endWorkday}
-	disabled={!tracker.hasWorkdayStarted() || tracker.hasBreakStarted()}
->
-	End workday
-</Button>
+	<div class="controls">
+		<Button
+			onclick={startWorkday}
+			disabled={!tracker.canStartWorkday()}
+			--flex-grow="1"
+		>
+			Start work
+		</Button>
+		{#if !tracker.hasBreakStarted()}
+			<Button
+				--flex-grow="1"
+				--width={breakButtonWidth}
+				onclick={tracker.startBreak}
+				disabled={!tracker.hasWorkdayStarted()}
+			>
+				Start break
+			</Button>
+		{:else}
+			<Button
+				--flex-grow="1"
+				--width={breakButtonWidth}
+				onclick={tracker.endBreak}
+				disabled={!tracker.hasWorkdayStarted()}
+			>
+				End break
+			</Button>
+		{/if}
+		<Button
+			--flex-grow="1"
+			onclick={endWorkday}
+			disabled={!tracker.hasWorkdayStarted() || tracker.hasBreakStarted()}
+		>
+			End work
+		</Button>
+	</div>
 
-<WorkdayEvents events={tracker.getCurrentWorkdayEvents()} />
+	<WorkdayEvents events={tracker.getCurrentWorkdayEvents()} />
+</section>
 
 {#if endWorkdayClicked}
 	<ConfirmationModal
@@ -86,3 +99,20 @@
 		{#snippet cancelText()}Cancel{/snippet}
 	</ConfirmationModal>
 {/if}
+
+<style>
+	.form {
+		width: 100%;
+		max-width: 24rem;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+	}
+
+	.controls {
+		width: 100%;
+		display: flex;
+		gap: 0.8rem;
+		justify-content: space-between;
+	}
+</style>

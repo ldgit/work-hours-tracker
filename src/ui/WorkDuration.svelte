@@ -11,7 +11,6 @@
 
 <style>
 	div {
-		padding: 1rem;
-		padding-top: 0rem;
+		margin-bottom: 1rem;
 	}
 </style>

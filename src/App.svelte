@@ -5,6 +5,7 @@
 	import WorkdayForm from "./ui/WorkdayForm.svelte";
 	import { getDatabase } from "./lib/database";
 	import Favicon from "./ui/Favicon.svelte";
+	import Header from "./ui/Header.svelte";
 
 	let user: User | null = $state(null);
 
@@ -37,9 +38,9 @@
 	{/if}
 </svelte:head>
 
-<main>
-	<h1>Welcome {user ? user.settings.username : "to Work Hours Tracker"}</h1>
+<Header>{user ? user.settings.username : "Work Hours Tracker"}</Header>
 
+<main>
 	{#if !user}
 		<UserForm onSubmit={setSelectedUser} />
 	{:else}

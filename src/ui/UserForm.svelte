@@ -24,7 +24,7 @@
 		}
 	}}
 >
-	<div class="inputRow">
+	<div>
 		<label>
 			<span>Username</span>
 			<input
@@ -35,7 +35,7 @@
 			/>
 		</label>
 	</div>
-	<div class="inputRow">
+	<div>
 		<label>
 			<span title="Union mandated!">Daily paid break</span>
 			<input
@@ -46,24 +46,35 @@
 			/>
 		</label>
 	</div>
-	<div>
-		<Button type="submit">Start tracking!</Button>
+	<div class="buttonRow">
+		<Button type="submit">Start tracking</Button>
 	</div>
 </form>
 
 <style>
-	.inputRow {
-		margin-bottom: 0.4rem;
+	form {
+		width: 100%;
+		max-width: 24rem;
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+		margin-left: 0.7rem;
+		margin-right: 0.7rem;
 	}
 
 	label {
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
+		gap: 1rem;
 	}
 
 	input {
+		width: 10rem;
 		padding: 4px;
-		margin: 4px;
+	}
+
+	.buttonRow {
+		margin-top: 0.5rem;
 	}
 </style>
