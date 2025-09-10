@@ -7,7 +7,12 @@ import {
 	type Workday,
 	type WorkdayEvent,
 } from "./tracker";
-import { subHours, subMinutes, subSeconds } from "date-fns";
+import {
+	differenceInSeconds,
+	subHours,
+	subMinutes,
+	subSeconds,
+} from "date-fns";
 
 /**
  * Default user starts fresh with no workdays.
@@ -20,6 +25,7 @@ beforeEach(() => {
 		settings: {
 			username: "Mark S.",
 			paidBreakDuration: 45,
+			workdayLength: 8,
 		},
 		// Default user *must* start with zero workdays worked because some tests rely on this.
 		trackingData: { workdays: [] },
@@ -47,6 +53,7 @@ test("tracker can start a break", () => {
 			{
 				events: [{ type: "start-workday", time: subHours(currentDate, 2) }],
 				paidBreakDuration: 35,
+				workdayLength: 8,
 			},
 		],
 	};
@@ -68,6 +75,7 @@ test("tracker cannot start a break if workday has not started", () => {
 					{ type: "end-workday", time: currentDate },
 				],
 				paidBreakDuration: 35,
+				workdayLength: 8,
 			},
 		],
 	};
@@ -138,6 +146,7 @@ test("tracker can end a break", () => {
 				{
 					events: [{ type: "start-workday", time: subHours(currentDate, 2) }],
 					paidBreakDuration: 35,
+					workdayLength: 8,
 				},
 			],
 		},
@@ -158,6 +167,7 @@ test("workday can last after midnight the next day ", () => {
 				{
 					events: [{ type: "start-workday", time: subHours(currentDate, 24) }],
 					paidBreakDuration: 35,
+					workdayLength: 7,
 				},
 			],
 		},
@@ -178,6 +188,7 @@ test("tracker cannot start a new workday if previous one has not ended", () => {
 				{
 					events: [{ type: "start-workday", time: subHours(currentDate, 2) }],
 					paidBreakDuration: 35,
+					workdayLength: 8,
 				},
 			],
 		},
@@ -226,6 +237,7 @@ test("tracker can end the workday", () => {
 				{
 					events: [{ type: "start-workday", time: subHours(currentDate, 2) }],
 					paidBreakDuration: 35,
+					workdayLength: 8,
 				},
 			],
 		},
@@ -488,6 +500,7 @@ test(`getTimeWorked only returns time worked for last workday`, () => {
 						{ type: "end-workday", time: new Date() },
 					],
 					paidBreakDuration: 5,
+					workdayLength: 8,
 				},
 				// We measure this workday.
 				{
@@ -500,6 +513,7 @@ test(`getTimeWorked only returns time worked for last workday`, () => {
 						{ type: "end-workday", time: new Date() },
 					],
 					paidBreakDuration: 5,
+					workdayLength: 8,
 				},
 			],
 		},
@@ -526,6 +540,7 @@ test("tracker returns updated tracking data", () => {
 			{
 				events: [{ time: expectedStartDate, type: "start-workday" }],
 				paidBreakDuration: 45,
+				workdayLength: 8,
 			},
 		],
 	});
@@ -541,6 +556,7 @@ test("tracker returns updated tracking data", () => {
 					{ time: expectedBreakStartDate, type: "start-break" },
 				],
 				paidBreakDuration: 45,
+				workdayLength: 8,
 			},
 		],
 	});
@@ -557,6 +573,7 @@ test("tracker returns updated tracking data", () => {
 					{ time: expectedBreakEndDate, type: "end-break" },
 				],
 				paidBreakDuration: 45,
+				workdayLength: 8,
 			},
 		],
 	});
@@ -574,6 +591,7 @@ test("tracker returns updated tracking data", () => {
 					{ time: expectedEndDate, type: "end-workday" },
 				],
 				paidBreakDuration: 45,
+				workdayLength: 8,
 			},
 		],
 	});
@@ -800,4 +818,236 @@ test("onChange should register a callback to be called whenever tracker state up
 	expect(changelog).toHaveLength(4);
 	expect(changelog[3].user.trackingData.workdays[0].events).toHaveLength(4);
 	expect(changelog[3].type).toEqual("end-workday");
+});
+
+test("calculateWorkEndTime should return date object for when workday should end", () => {
+	vi.useFakeTimers();
+	vi.setSystemTime(new Date(2024, 4, 1, 8, 0, 0));
+	const tracker = createTracker(defaultUser);
+
+	tracker.startWorkday();
+	expect(
+		differenceInSeconds(
+			new Date(2024, 4, 1, 16, 0, 0),
+			tracker.calculateWorkEndTime(),
+		),
+	).toEqual(0);
+	// Advance by 1 hour.
+	vi.advanceTimersByTime(1000 * 60 * 60 * 1);
+	expect(
+		differenceInSeconds(
+			new Date(2024, 4, 1, 16, 0, 0),
+			tracker.calculateWorkEndTime(),
+		),
+	).toEqual(0);
+
+	// Take a 45 minute (paid) break.
+	tracker.startBreak();
+	vi.advanceTimersByTime(1000 * 60 * 45);
+	tracker.endBreak();
+	expect(
+		differenceInSeconds(
+			new Date(2024, 4, 1, 16, 0, 0),
+			tracker.calculateWorkEndTime(),
+		),
+	).toEqual(0);
+
+	// Take a 15 minute (now unpaid) break.
+	tracker.startBreak();
+	vi.advanceTimersByTime(1000 * 60 * 15);
+	expect(
+		differenceInSeconds(
+			new Date(2024, 4, 1, 16, 15, 0),
+			tracker.calculateWorkEndTime(),
+		),
+	).toEqual(0);
+	tracker.endBreak();
+
+	// Work for 6 more hours (7:45 total).
+	vi.advanceTimersByTime(1000 * 60 * 60 * 6);
+	expect(
+		differenceInSeconds(
+			new Date(2024, 4, 1, 16, 15, 0),
+			tracker.calculateWorkEndTime(),
+		),
+	).toEqual(0);
+
+	// Take a 2 hour break.
+	tracker.startBreak();
+	vi.advanceTimersByTime(1000 * 60 * 60 * 2);
+	expect(
+		differenceInSeconds(
+			new Date(2024, 4, 1, 18, 15, 0),
+			tracker.calculateWorkEndTime(),
+		),
+	).toEqual(0);
+
+	tracker.endBreak();
+	// Work to full 8 hours.
+	vi.advanceTimersByTime(1000 * 60 * 15);
+	tracker.endWorkday();
+	expect(
+		differenceInSeconds(
+			new Date(2024, 4, 1, 18, 15, 0),
+			tracker.calculateWorkEndTime(),
+		),
+	).toEqual(0);
+});
+
+test("calculateWorkEndTime should count hours worked over the workday length", () => {
+	vi.useFakeTimers();
+	vi.setSystemTime(new Date(2024, 4, 1, 8, 0, 0));
+	const tracker = createTracker(defaultUser);
+
+	tracker.startWorkday();
+	// Work for 2 hours.
+	vi.advanceTimersByTime(1000 * 60 * 60 * 2);
+	// Take one hour break.
+	tracker.startBreak();
+	vi.advanceTimersByTime(1000 * 60 * 60 * 1);
+	tracker.endBreak();
+	expect(
+		differenceInSeconds(
+			new Date(2024, 4, 1, 16, 15, 0),
+			tracker.calculateWorkEndTime(),
+		),
+	).toEqual(0);
+
+	// Work for 10 hours.
+	vi.advanceTimersByTime(1000 * 60 * 60 * 10);
+	expect(
+		differenceInSeconds(
+			new Date(2024, 4, 1, 21, 0, 0),
+			tracker.calculateWorkEndTime(),
+		),
+	).toEqual(0);
+});
+
+[
+	{ hours: 8, expectedEndWorkDate: new Date(2024, 4, 1, 16, 0, 0) },
+	{ hours: 4, expectedEndWorkDate: new Date(2024, 4, 1, 12, 0, 0) },
+	{ hours: 5.4, expectedEndWorkDate: new Date(2024, 4, 1, 13, 24, 0) },
+].forEach(({ hours, expectedEndWorkDate }) => {
+	test(`calculateWorkEndTime should return date ${hours}h from now if workday hasn't started yet`, () => {
+		vi.useFakeTimers();
+		vi.setSystemTime(new Date(2024, 4, 1, 8, 0, 0));
+		const tracker = createTracker({
+			...defaultUser,
+			settings: { ...defaultUser.settings, workdayLength: hours },
+		});
+
+		expect(
+			differenceInSeconds(expectedEndWorkDate, tracker.calculateWorkEndTime()),
+		).toEqual(0);
+	});
+});
+
+test("changeWorkdayLength should change workday length for a new workday", () => {
+	vi.useFakeTimers();
+	vi.setSystemTime(new Date(2024, 4, 1, 8, 0, 0));
+	const tracker = createTracker({
+		...defaultUser,
+		settings: { ...defaultUser.settings, workdayLength: 8 },
+	});
+	// Work for first day for 8 hours.
+	tracker.startWorkday();
+	vi.advanceTimersByTime(1000 * 60 * 60 * 8);
+	tracker.endWorkday();
+	// Advance to next day (08:00h) and start workday with new settings.
+	vi.advanceTimersByTime(1000 * 60 * 60 * 16);
+
+	tracker.changeWorkdayLength(6);
+
+	tracker.startWorkday();
+	expect(
+		differenceInSeconds(
+			new Date(2024, 4, 2, 14, 0, 0),
+			tracker.calculateWorkEndTime(),
+		),
+	).toEqual(0);
+	expect(tracker.getTrackingData().workdays[1].workdayLength).toEqual(6);
+	// Previous workday length should not change.
+	expect(tracker.getTrackingData().workdays[0].workdayLength).toEqual(8);
+});
+
+test("changeWorkdayLength should change workday length for a workday already in progress", () => {
+	vi.useFakeTimers();
+	vi.setSystemTime(new Date(2024, 4, 1, 8, 0, 0));
+	const tracker = createTracker({
+		...defaultUser,
+		settings: { ...defaultUser.settings, workdayLength: 8 },
+	});
+	tracker.startWorkday();
+	expect(
+		differenceInSeconds(
+			new Date(2024, 4, 1, 16, 0, 0),
+			tracker.calculateWorkEndTime(),
+		),
+	).toEqual(0);
+
+	tracker.changeWorkdayLength(5);
+	expect(
+		differenceInSeconds(
+			new Date(2024, 4, 1, 13, 0, 0),
+			tracker.calculateWorkEndTime(),
+		),
+	).toEqual(0);
+});
+
+test("changePaidBreakDuration should change workday length for a new workday", () => {
+	vi.useFakeTimers();
+	vi.setSystemTime(new Date(2024, 4, 1, 8, 0, 0));
+	const tracker = createTracker({
+		...defaultUser,
+		settings: { ...defaultUser.settings, paidBreakDuration: 60 },
+	});
+	// Work for first day for 8 hours including 1 hour paid break.
+	tracker.startWorkday();
+	vi.advanceTimersByTime(1000 * 60 * 60 * 1);
+	tracker.startBreak();
+	vi.advanceTimersByTime(1000 * 60 * 60 * 1);
+	tracker.endBreak();
+	vi.advanceTimersByTime(1000 * 60 * 60 * 6);
+	expect(tracker.getTimeWorked()).toEqual({
+		hours: 8,
+		minutes: 0,
+		seconds: 0,
+	});
+	tracker.endWorkday();
+	// Advance to next day (08:00h) and start workday with new settings.
+	vi.advanceTimersByTime(1000 * 60 * 60 * 16);
+
+	tracker.changePaidBreakDuration(30);
+
+	tracker.startWorkday();
+	expect(tracker.getTrackingData().workdays[1].paidBreakDuration).toEqual(30);
+	// Previous workday length should not change.
+	expect(tracker.getTrackingData().workdays[0].paidBreakDuration).toEqual(60);
+});
+
+test("changePaidBreakDuration should change workday length for a workday already in progress", () => {
+	vi.useFakeTimers();
+	vi.setSystemTime(new Date(2024, 4, 1, 8, 0, 0));
+	const tracker = createTracker({
+		...defaultUser,
+		settings: { ...defaultUser.settings, paidBreakDuration: 60 },
+	});
+	tracker.startWorkday();
+	vi.advanceTimersByTime(1000 * 60 * 60 * 1);
+	tracker.startBreak();
+	vi.advanceTimersByTime(1000 * 60 * 60 * 1);
+	tracker.endBreak();
+	expect(tracker.getTimeWorked()).toEqual({
+		hours: 2,
+		minutes: 0,
+		seconds: 0,
+	});
+
+	tracker.changePaidBreakDuration(30);
+
+	expect(tracker.getTimeWorked()).toEqual({
+		hours: 1,
+		minutes: 30,
+		seconds: 0,
+	});
 });
