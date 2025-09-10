@@ -297,3 +297,10 @@ test("Display hours worked so far", async ({ page }) => {
 	await page.reload();
 	await expect(page.getByText(/Work duration/)).not.toBeVisible();
 });
+
+test.skip("do not show the options button in header if user has not yet entered their data", () => {});
+test.skip("can change paid break duration through the options menu", () => {});
+test.skip("can change paid break duration through the options menu after workday started", () => {});
+test.skip("can see the current estimate of when workday ends", () => {});
+test.skip("can change workday length through the options menu", () => {});
+test.skip("can change workday length through the options menu after workday started", () => {});
