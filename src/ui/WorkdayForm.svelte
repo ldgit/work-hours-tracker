@@ -6,6 +6,7 @@
 	import Status from "./Status.svelte";
 	import WorkdayEvents from "./WorkdayEvents.svelte";
 	import WorkDuration from "./WorkDuration.svelte";
+	import { formatDate } from "date-fns";
 
 	const { user: userProp, onChange } = $props();
 	let user: User = $state(userProp);
@@ -45,6 +46,9 @@
 
 	{#if tracker.hasWorkdayStarted()}
 		<WorkDuration timeWorked={tracker.getTimeWorked()} />
+		<div>
+			Work ends at {formatDate(tracker.calculateWorkEndTime(), "HH:mm:ss")} (estimate)
+		</div>
 	{/if}
 
 	<div class="controls">

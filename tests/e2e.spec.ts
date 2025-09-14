@@ -16,17 +16,21 @@ test("first visit, full workday", async ({ page }) => {
 	).toBeVisible();
 	await expect(page.getByLabel("Username")).toBeVisible();
 	await expect(page.getByLabel("Daily paid break")).toBeVisible();
+	await expect(page.getByLabel("Workday length")).toBeVisible();
 	await expect(page.getByLabel("Username")).toContainText("");
 	await expect(page.getByLabel("Daily paid break")).toContainText("");
+	await expect(page.getByTitle("Options")).not.toBeVisible();
 
 	// Fill in the initial form
 	await page.getByLabel("Username").fill("Mark S");
 	await page.getByLabel("Daily paid break").fill("30");
+	await page.getByLabel("Workday length").fill("6");
 	await page.getByText("Start tracking").click();
 
 	// Form is gone
 	await expect(page.getByLabel("Username")).not.toBeVisible();
 	await expect(page.getByLabel("Daily paid break")).not.toBeVisible();
+	await expect(page.getByLabel("Workday length")).not.toBeVisible();
 	await expect(page.getByText("Start tracking")).not.toBeVisible();
 
 	// User work hours tracking interface is shown
@@ -42,6 +46,8 @@ test("first visit, full workday", async ({ page }) => {
 		"color",
 		"rgb(255, 0, 0)",
 	);
+
+	await expect(page.getByTitle("Options")).toBeVisible();
 
 	// Favicon updated
 	await expect(page.getByTestId("favicon")).toHaveAttribute(
@@ -298,9 +304,195 @@ test("Display hours worked so far", async ({ page }) => {
 	await expect(page.getByText(/Work duration/)).not.toBeVisible();
 });
 
-test.skip("do not show the options button in header if user has not yet entered their data", () => {});
-test.skip("can change paid break duration through the options menu", () => {});
-test.skip("can change paid break duration through the options menu after workday started", () => {});
-test.skip("can see the current estimate of when workday ends", () => {});
-test.skip("can change workday length through the options menu", () => {});
-test.skip("can change workday length through the options menu after workday started", () => {});
+test("can change paid break duration through the options menu after workday started", async ({
+	page,
+}) => {
+	await page.goto("/");
+	await page.getByLabel("Username").fill("Mark S");
+	await page.getByText("Start tracking").click();
+	await expect(page.getByTitle("Options")).toBeVisible();
+	// Start work and use the full paid break.
+	await page.clock.setFixedTime(new Date(2025, 2, 2, 8, 5, 0));
+	await page.getByRole("button", { name: "Start work" }).click();
+	await page.clock.setFixedTime(new Date(2025, 2, 2, 9, 5, 0));
+	await page.getByRole("button", { name: "Start break" }).click();
+	await page.clock.setFixedTime(new Date(2025, 2, 2, 9, 55, 0));
+	await page.getByRole("button", { name: "End break" }).click();
+	await expect(
+		page.getByText("Work duration: 1 hours, 45 minutes, 0 seconds"),
+	).toBeVisible();
+	await expect(page.getByLabel("Daily paid break")).not.toBeVisible();
+
+	await page.getByTitle("Options").click();
+	await expect(page.getByLabel("Daily paid break")).toBeVisible();
+	await expect(
+		page.getByRole("textbox", { name: "Daily paid break" }),
+	).toHaveValue("45"); // default
+	await page.getByLabel("Daily paid break").fill("35");
+	await page.getByRole("button", { name: "Save" }).click();
+
+	// Form is closed.
+	await expect(page.getByLabel("Daily paid break")).not.toBeVisible();
+	// Smaller paid break should reduce hours worked.
+	await expect(
+		page.getByText("Work duration: 1 hours, 35 minutes, 0 seconds"),
+	).toBeVisible();
+	// Test fails without this delay in headless chromium browser for playwright
+	// versions 1.52.0 or higher.
+	await delay(10);
+	await page.reload();
+	await expect(
+		page.getByText("Work duration: 1 hours, 35 minutes, 0 seconds"),
+		"Changes should be saved in the actual database",
+	).toBeVisible();
+});
+
+test("can change paid break duration through the options menu before workday started", async ({
+	page,
+}) => {
+	await page.goto("/");
+	await page.getByLabel("Username").fill("Mark S");
+	await page.getByText("Start tracking").click();
+	await expect(page.getByTitle("Options")).toBeVisible();
+
+	await page.getByTitle("Options").click();
+	await expect(page.getByLabel("Daily paid break")).toBeVisible();
+	await expect(
+		page.getByRole("textbox", { name: "Daily paid break" }),
+	).toHaveValue("45"); // default
+	await page.getByLabel("Daily paid break").fill("35");
+	await page.getByRole("button", { name: "Save" }).click();
+
+	// Form is closed.
+	await expect(page.getByLabel("Daily paid break")).not.toBeVisible();
+	// Start work, work for one hour, then do a 50 minute break.
+	await page.clock.setFixedTime(new Date(2025, 2, 2, 8, 5, 0));
+	await page.getByRole("button", { name: "Start work" }).click();
+	await page.clock.setFixedTime(new Date(2025, 2, 2, 9, 5, 0));
+	await page.getByRole("button", { name: "Start break" }).click();
+	await page.clock.setFixedTime(new Date(2025, 2, 2, 9, 55, 0));
+	await page.getByRole("button", { name: "End break" }).click();
+	// Smaller paid break should reduce hours worked.
+	await expect(
+		page.getByText("Work duration: 1 hours, 35 minutes, 0 seconds"),
+	).toBeVisible();
+	// Test fails without this delay in headless chromium browser for playwright
+	// versions 1.52.0 or higher.
+	await delay(10);
+	await page.reload();
+	await expect(
+		page.getByText("Work duration: 1 hours, 35 minutes, 0 seconds"),
+		"Changes should be saved in the actual database",
+	).toBeVisible();
+});
+
+test("can see the current estimate of when the workday will end", async ({
+	page,
+}) => {
+	await page.goto("/");
+	await page.getByLabel("Username").fill("Mark S");
+	await expect(page.getByText(/Work ends at/)).not.toBeVisible();
+	await page.getByText("Start tracking").click();
+	await page.clock.setFixedTime(new Date(2025, 2, 2, 8, 5, 0));
+	await expect(page.getByText(/Work ends at/)).not.toBeVisible();
+	await page.getByRole("button", { name: "Start work" }).click();
+	await expect(page.getByText("Work ends at 16:05:00")).toBeVisible();
+});
+
+test("can change workday length through the options menu before workday starts", async ({
+	page,
+}) => {
+	await page.goto("/");
+	await page.getByLabel("Username").fill("Mark S");
+	await expect(page.getByText(/Work ends at/)).not.toBeVisible();
+	await page.getByText("Start tracking").click();
+	await page.clock.setFixedTime(new Date(2025, 2, 2, 8, 5, 0));
+	await expect(page.getByText(/Work ends at/)).not.toBeVisible();
+
+	await page.getByTitle("Options").click();
+	await expect(page.getByLabel("Workday length")).toBeVisible();
+	await expect(
+		page.getByRole("textbox", { name: "Workday length" }),
+	).toHaveValue("8"); // default
+	await page.getByLabel("Workday length").fill("6");
+	await page.getByRole("button", { name: "Save" }).click();
+
+	await page.getByRole("button", { name: "Start work" }).click();
+	await expect(page.getByText("Work ends at 14:05:00")).toBeVisible();
+});
+
+test("can change workday length through the options menu after workday starts", async ({
+	page,
+}) => {
+	await page.goto("/");
+	await page.getByLabel("Username").fill("Mark S");
+	await page.getByText("Start tracking").click();
+	await page.clock.setFixedTime(new Date(2025, 2, 2, 8, 5, 0));
+	await page.getByRole("button", { name: "Start work" }).click();
+
+	await page.getByTitle("Options").click();
+	await expect(page.getByLabel("Workday length")).toBeVisible();
+	await page.getByLabel("Workday length").fill("5");
+	await page.getByRole("button", { name: "Save" }).click();
+
+	await expect(page.getByText("Work ends at 13:05:00")).toBeVisible();
+});
+
+test("submit Options form without changing values", async ({ page }) => {
+	await page.goto("/");
+	await page.getByLabel("Username").fill("Mark S");
+	await page.getByText("Start tracking").click();
+
+	await saveUnchangedOptionsForm(page);
+
+	await page.clock.setFixedTime(new Date(2025, 2, 2, 8, 0, 0));
+	await page.getByRole("button", { name: "Start work" }).click();
+	await page.clock.setFixedTime(new Date(2025, 2, 2, 9, 0, 0));
+	await page.getByRole("button", { name: "Start break" }).click();
+	await page.clock.setFixedTime(new Date(2025, 2, 2, 10, 0, 0));
+	await page.getByRole("button", { name: "End break" }).click();
+
+	await expect(page.getByText("Work ends at 16:15:00")).toBeVisible();
+	await expect(
+		page.getByText("Work duration: 1 hours, 45 minutes, 0 seconds"),
+	).toBeVisible();
+
+	await saveUnchangedOptionsForm(page);
+
+	await expect(page.getByText("Work ends at 16:15:00")).toBeVisible();
+	await expect(
+		page.getByText("Work duration: 1 hours, 45 minutes, 0 seconds"),
+	).toBeVisible();
+});
+
+test("cancel Options form should close it without saving changes", async ({
+	page,
+}) => {
+	await page.goto("/");
+	await page.getByLabel("Username").fill("Mark S");
+	await page.getByText("Start tracking").click();
+	await page.clock.setFixedTime(new Date(2025, 2, 2, 8, 0, 0));
+	await page.getByRole("button", { name: "Start work" }).click();
+	await page.clock.setFixedTime(new Date(2025, 2, 2, 9, 0, 0));
+	await page.getByRole("button", { name: "Start break" }).click();
+	await page.clock.setFixedTime(new Date(2025, 2, 2, 10, 0, 0));
+	await page.getByRole("button", { name: "End break" }).click();
+
+	await page.getByTitle("Options").click();
+	await expect(page.getByRole("button", { name: "Cancel" })).toBeVisible();
+	await page.getByLabel("Daily paid break").fill("35");
+	await page.getByLabel("Workday length").fill("6");
+	await page.getByRole("button", { name: "Cancel" }).click();
+
+	await expect(page.getByText("Work ends at 16:15:00")).toBeVisible();
+	await expect(
+		page.getByText("Work duration: 1 hours, 45 minutes, 0 seconds"),
+	).toBeVisible();
+});
+
+async function saveUnchangedOptionsForm(page: Page) {
+	await page.getByTitle("Options").click();
+	await expect(page.getByLabel("Daily paid break")).toBeVisible();
+	await expect(page.getByLabel("Workday length")).toBeVisible();
+	await page.getByRole("button", { name: "Save" }).click();
+}

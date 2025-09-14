@@ -6,6 +6,7 @@
 
 	let username = $state("");
 	let paidBreakDuration = $state(45);
+	let workdayLength = $state(8);
 </script>
 
 <form
@@ -15,6 +16,7 @@
 		const userId = await db.insertUser({
 			username,
 			paidBreakDuration,
+			workdayLength,
 		});
 
 		const user = await db.getUserById(userId);
@@ -46,6 +48,19 @@
 			/>
 		</label>
 	</div>
+	<div>
+		<label>
+			<span title="In hours">Workday length</span>
+			<input
+				bind:value={workdayLength}
+				type="number"
+				placeholder="in hours"
+				defaultValue="8"
+				required
+			/>
+		</label>
+	</div>
+
 	<div class="buttonRow">
 		<Button type="submit">Start tracking</Button>
 	</div>
