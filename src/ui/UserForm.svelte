@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { getDatabase } from "../lib/database";
 	import Button from "./Button.svelte";
+	import Input from "./Input.svelte";
 
 	let { onSubmit } = $props();
 
@@ -29,34 +30,37 @@
 	<div>
 		<label>
 			<span>Username</span>
-			<input
+			<Input
 				bind:value={username}
 				placeholder="username"
 				required
 				type="text"
+				width="10rem"
 			/>
 		</label>
 	</div>
 	<div>
 		<label>
 			<span title="Union mandated!">Daily paid break</span>
-			<input
+			<Input
 				bind:value={paidBreakDuration}
 				type="number"
 				placeholder="in minutes"
 				required
+				width="10rem"
 			/>
 		</label>
 	</div>
 	<div>
 		<label>
 			<span title="In hours">Workday length</span>
-			<input
+			<Input
 				bind:value={workdayLength}
 				type="number"
 				placeholder="in hours"
 				defaultValue="8"
 				required
+				width="10rem"
 			/>
 		</label>
 	</div>
@@ -82,11 +86,6 @@
 		justify-content: space-between;
 		align-items: center;
 		gap: 1rem;
-	}
-
-	input {
-		width: 10rem;
-		padding: 4px;
 	}
 
 	.buttonRow {

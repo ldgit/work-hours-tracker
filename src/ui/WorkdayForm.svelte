@@ -4,9 +4,9 @@
 	import ConfirmationModal from "./ConfirmationModal.svelte";
 	import Favicon from "./Favicon.svelte";
 	import Status from "./Status.svelte";
+	import WorkdayEndEstimate from "./WorkdayEndEstimate.svelte";
 	import WorkdayEvents from "./WorkdayEvents.svelte";
 	import WorkDuration from "./WorkDuration.svelte";
-	import { formatDate } from "date-fns";
 
 	const { user: userProp, onChange } = $props();
 	let user: User = $state(userProp);
@@ -45,9 +45,9 @@
 	<Status {tracker} />
 
 	{#if tracker.hasWorkdayStarted()}
-		<WorkDuration timeWorked={tracker.getTimeWorked()} />
-		<div>
-			Work ends at {formatDate(tracker.calculateWorkEndTime(), "HH:mm:ss")} (estimate)
+		<div class="basicWorkInfo">
+			<WorkDuration timeWorked={tracker.getTimeWorked()} />
+			<WorkdayEndEstimate estimate={tracker.calculateWorkEndTime()} />
 		</div>
 	{/if}
 
@@ -118,5 +118,13 @@
 		display: flex;
 		gap: 0.8rem;
 		justify-content: space-between;
+	}
+
+	.basicWorkInfo {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 0.3rem;
+		margin-bottom: 1rem;
 	}
 </style>

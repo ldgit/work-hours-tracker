@@ -30,7 +30,7 @@
 		color: white;
 		margin-bottom: 1.5rem;
 		align-items: center;
-		padding: 1.4rem;
+		padding: 1rem;
 		padding-top: 0.5rem;
 		padding-bottom: 0.5rem;
 		background: linear-gradient(
@@ -38,6 +38,7 @@
 			var(--color-gray-400) 0%,
 			var(--color-gray-900) 100%
 		);
+		height: 4.5rem;
 	}
 
 	h1 {
