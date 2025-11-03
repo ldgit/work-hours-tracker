@@ -1,120 +1,145 @@
 import { v4 as uuidv4 } from "uuid";
+import { openDB, unwrap } from "idb";
 import type { Settings, User } from "./tracker";
 
 /**
  * Used to access local database data.
  */
 interface Database {
-	insertUser(user: NewUserData): Promise<string | false>;
+	name: string;
+	insertUser(user: NewUserSettings): Promise<string | false>;
 	updateUser(user: User): Promise<boolean>;
 	getUserById(userId: string | false): Promise<User | null>;
 	getAllUsers(): Promise<User[]>;
 	getUserCount(): Promise<number>;
+	close(): void;
 }
 
-export type NewUserData = Settings;
+export type NewUserSettings = Settings;
 
-export function getDatabase(name = "work-hours-tracker-db"): Promise<Database> {
-	let db: IDBDatabase;
-
-	return new Promise((resolve, reject) => {
-		const request = window.indexedDB.open(name, 1);
-
-		request.onerror = (event) => {
-			console.error("Error while opening database", event);
-			reject(event);
-		};
-
-		request.onsuccess = () => {
-			db = request.result;
-			db.addEventListener("error", (event) => {
-				console.error("Database error occurred", event);
-			});
-
-			resolve({
-				async insertUser(userSettings) {
-					const transaction = db.transaction(["users"], "readwrite");
-					const usersTable = transaction.objectStore("users");
-					const userId = uuidv4();
-					usersTable.add({
-						id: userId,
-						settings: userSettings,
-						trackingData: { workdays: [] },
-					});
-
-					return new Promise((resolve) => {
-						transaction.addEventListener("complete", () => {
-							resolve(userId);
-						});
-						transaction.addEventListener("error", () => {
-							resolve(false);
-						});
-					});
-				},
-				async updateUser(user) {
-					const transaction = db.transaction(["users"], "readwrite");
-					const usersTable = transaction.objectStore("users");
-
-					usersTable.put(user);
-
-					return new Promise((resolve) => {
-						transaction.addEventListener("complete", () => {
-							resolve(true);
-						});
-						transaction.addEventListener("error", () => {
-							resolve(false);
-						});
-					});
-				},
-				async getUserById(userId: string | false): Promise<User | null> {
-					return new Promise((resolve) => {
-						const userRequest = db
-							.transaction(["users"], "readonly")
-							.objectStore("users")
-							.get(userId || "");
-
-						userRequest?.addEventListener("success", () => {
-							resolve(userRequest.result || null);
-						});
-					});
-
-					return null;
-				},
-				async getAllUsers() {
-					const usersRequest = db
-						.transaction(["users"], "readonly")
-						.objectStore("users")
-						.getAll();
-
-					return new Promise((resolve) => {
-						usersRequest.addEventListener("success", () => {
-							resolve(usersRequest.result);
-						});
-					});
-				},
-				async getUserCount() {
-					const usersCountRequest = db
-						.transaction(["users"], "readonly")
-						.objectStore("users")
-						.count();
-
-					return new Promise((resolve) => {
-						usersCountRequest.addEventListener("success", () => {
-							resolve(usersCountRequest.result);
-						});
-					});
-				},
-			});
-		};
-
-		request.addEventListener("upgradeneeded", (init) => {
-			const db = (init.target as IDBOpenDBRequest).result as IDBDatabase;
-			const workdaysTable = db.createObjectStore("workdays", { keyPath: "id" });
-			workdaysTable.createIndex("date", "date", { unique: true });
-			const usersTable = db.createObjectStore("users", { keyPath: "id" });
-			usersTable.createIndex("settings.username", "settings.username", {
-				unique: true,
-			});
-		});
+/**
+ * Catches extra error that is thrown if inserting an object with same unique property.
+ *
+ * @see https://github.com/jakearchibald/idb/issues/256#issuecomment-1048551626
+ */
+function preventTransactionCloseOnError(promise: Promise<unknown>) {
+	const request = unwrap(promise);
+	request.addEventListener("error", (event) => {
+		event.preventDefault();
+		event.stopPropagation();
 	});
+
+	return promise;
+}
+
+export async function getDatabase(
+	name = "work-hours-tracker-db",
+	version = 2,
+): Promise<Database> {
+	const indexedDatabase = await openDB(name, version, {
+		async upgrade(db, oldVersion, newVersion, transaction) {
+			/**
+			 * Recommended pattern for version upgrades.
+			 *
+			 * @see https://stackoverflow.com/a/44007456
+			 */
+			if (oldVersion < 1) {
+				// Create initial schema.
+				const workdaysTable = db.createObjectStore("workdays", {
+					keyPath: "id",
+				});
+				workdaysTable.createIndex("date", "date", { unique: true });
+				const usersTable = db.createObjectStore("users", { keyPath: "id" });
+				usersTable.createIndex("settings.username", "settings.username", {
+					unique: true,
+				});
+			}
+
+			if (oldVersion < 2) {
+				// Migrate data to v2: add workdayLength and paidBreakDuration to user settings and workdays.
+				const usersRequest = transaction.objectStore("users");
+				const users = await usersRequest.getAll();
+				users.forEach(async (user: User) => {
+					user.settings.paidBreakDuration = 45;
+					user.settings.workdayLength = 8;
+
+					user.trackingData.workdays = user.trackingData.workdays.map(
+						(workday) => {
+							return { ...workday, paidBreakDuration: 45, workdayLength: 8 };
+						},
+					);
+
+					await usersRequest.put(user);
+				});
+			}
+		},
+		blocked() {
+			console.error(
+				"Database creation blocked! Please close all other tabs with this site open!",
+			);
+		},
+		terminated() {
+			console.warn("Database closed");
+		},
+	});
+
+	const workHoursDb: Database = {
+		name: indexedDatabase.name,
+		async insertUser(userSettings) {
+			const transaction = indexedDatabase.transaction(["users"], "readwrite");
+			const usersTable = transaction.objectStore("users");
+			const userId = uuidv4();
+
+			let result;
+			try {
+				[, result] = await Promise.all([
+					transaction.done,
+					preventTransactionCloseOnError(
+						usersTable.add({
+							id: userId,
+							settings: userSettings,
+							trackingData: { workdays: [] },
+						}),
+					),
+				]);
+				// eslint-disable-next-line @typescript-eslint/no-unused-vars
+			} catch (e) {
+				return false;
+			}
+
+			return result ? userId : false;
+		},
+		async updateUser(user) {
+			const transaction = indexedDatabase.transaction(["users"], "readwrite");
+			const usersTable = transaction.objectStore("users");
+
+			return Boolean(await usersTable.put(user));
+		},
+		async getUserById(userId: string | false): Promise<User | null> {
+			const userRequest = indexedDatabase
+				.transaction(["users"], "readonly")
+				.objectStore("users");
+
+			return (await userRequest.get(userId || "")) || null;
+		},
+		async getAllUsers() {
+			const usersRequest = indexedDatabase
+				.transaction(["users"], "readonly")
+				.objectStore("users");
+
+			return await usersRequest.getAll();
+		},
+		async getUserCount() {
+			const usersCountRequest = indexedDatabase
+				.transaction(["users"], "readonly")
+				.objectStore("users");
+
+			return await usersCountRequest.count();
+		},
+		close() {
+			indexedDatabase.close();
+		},
+	};
+
+	return workHoursDb;
 }
