@@ -4,6 +4,7 @@
 	import ConfirmationModal from "./ConfirmationModal.svelte";
 	import Favicon from "./Favicon.svelte";
 	import Status from "./Status.svelte";
+	import WorkdayEndEstimate from "./WorkdayEndEstimate.svelte";
 	import WorkdayEvents from "./WorkdayEvents.svelte";
 	import WorkDuration from "./WorkDuration.svelte";
 
@@ -26,6 +27,8 @@
 		endWorkdayClicked = false;
 		tracker.endWorkday();
 	}
+
+	const breakButtonWidth = "5.9rem";
 </script>
 
 <svelte:head>
@@ -38,40 +41,54 @@
 	/>
 </svelte:head>
 
-<Status {tracker} />
+<section class="form">
+	<Status {tracker} />
 
-{#if tracker.hasWorkdayStarted()}
-	<WorkDuration timeWorked={tracker.getTimeWorked()} />
-{/if}
+	{#if tracker.hasWorkdayStarted()}
+		<div class="basicWorkInfo">
+			<WorkDuration timeWorked={tracker.getTimeWorked()} />
+			<WorkdayEndEstimate estimate={tracker.calculateWorkEndTime()} />
+		</div>
+	{/if}
 
-<Button onclick={startWorkday} disabled={!tracker.canStartWorkday()}>
-	Start Workday
-</Button>
-{#if !tracker.hasBreakStarted()}
-	<Button
-		--width="6.1rem"
-		onclick={tracker.startBreak}
-		disabled={!tracker.hasWorkdayStarted()}
-	>
-		Start break
-	</Button>
-{:else}
-	<Button
-		--width="6.1rem"
-		onclick={tracker.endBreak}
-		disabled={!tracker.hasWorkdayStarted()}
-	>
-		End break
-	</Button>
-{/if}
-<Button
-	onclick={endWorkday}
-	disabled={!tracker.hasWorkdayStarted() || tracker.hasBreakStarted()}
->
-	End workday
-</Button>
+	<div class="controls">
+		<Button
+			onclick={startWorkday}
+			disabled={!tracker.canStartWorkday()}
+			--flex-grow="1"
+		>
+			Start work
+		</Button>
+		{#if !tracker.hasBreakStarted()}
+			<Button
+				--flex-grow="1"
+				--width={breakButtonWidth}
+				onclick={tracker.startBreak}
+				disabled={!tracker.hasWorkdayStarted()}
+			>
+				Start break
+			</Button>
+		{:else}
+			<Button
+				--flex-grow="1"
+				--width={breakButtonWidth}
+				onclick={tracker.endBreak}
+				disabled={!tracker.hasWorkdayStarted()}
+			>
+				End break
+			</Button>
+		{/if}
+		<Button
+			--flex-grow="1"
+			onclick={endWorkday}
+			disabled={!tracker.hasWorkdayStarted() || tracker.hasBreakStarted()}
+		>
+			End work
+		</Button>
+	</div>
 
-<WorkdayEvents events={tracker.getCurrentWorkdayEvents()} />
+	<WorkdayEvents events={tracker.getCurrentWorkdayEvents()} />
+</section>
 
 {#if endWorkdayClicked}
 	<ConfirmationModal
@@ -86,3 +103,28 @@
 		{#snippet cancelText()}Cancel{/snippet}
 	</ConfirmationModal>
 {/if}
+
+<style>
+	.form {
+		width: 100%;
+		max-width: 24rem;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+	}
+
+	.controls {
+		width: 100%;
+		display: flex;
+		gap: 0.8rem;
+		justify-content: space-between;
+	}
+
+	.basicWorkInfo {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 0.3rem;
+		margin-bottom: 1rem;
+	}
+</style>

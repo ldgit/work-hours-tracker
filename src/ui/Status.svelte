@@ -20,8 +20,9 @@
 
 <style>
 	.status {
-		font-size: 1.3rem;
+		font-size: 1.5rem;
 		font-weight: 700;
+		margin-bottom: 1rem;
 	}
 
 	.working {

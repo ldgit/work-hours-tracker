@@ -6,39 +6,47 @@
 	font-weight: 400;
 
 	color-scheme: light dark;
-	color: rgba(255, 255, 255, 0.87);
-	background-color: #242424;
 
 	font-synthesis: none;
 	text-rendering: optimizeLegibility;
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;
+
+	/* Taken from https://tailwindcss.com/docs/colors */
+	--color-gray-950: oklch(14.5% 0 0);
+	--color-gray-900: oklch(20.5% 0 0);
+	--color-gray-800: oklch(26.9% 0 0);
+	--color-gray-700: oklch(37.1% 0 0);
+	--color-gray-600: oklch(43.9% 0 0);
+	--color-gray-500: oklch(55.6% 0 0);
+	--color-gray-400: oklch(70.8% 0 0);
+	--color-gray-300: oklch(87% 0 0);
+	--color-gray-200: oklch(92.2% 0 0);
+	--color-gray-100: oklch(97% 0 0);
+	--color-gray-50: oklch(98.5% 0 0);
+
+	color: var(--color-gray-900);
+	background-color: var(--color-gray-100);
 }
 
 body {
 	margin: 0;
+}
+
+main {
+	width: 100%;
 	display: flex;
-	place-items: center;
-	min-width: 320px;
-	min-height: 100vh;
+	justify-content: center;
+	padding-left: 0.5rem;
+	padding-right: 0.5rem;
 }
 
-#app {
-	max-width: 1280px;
-	margin: 0 auto;
-	padding: 2rem;
-	text-align: center;
-}
-
-@media (prefers-color-scheme: light) {
+@media (prefers-color-scheme: dark) {
 	:root {
-		color: #213547;
-		background-color: #ffffff;
-	}
-	a:hover {
-		color: #747bff;
+		color: var(--color-gray-100);
+		background-color: var(--color-gray-800);
 	}
 	button {
-		background-color: #f9f9f9;
+		background-color: var(--color-gray-700);
 	}
 }

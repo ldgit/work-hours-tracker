@@ -1,4 +1,4 @@
-import { differenceInSeconds, isSameDay } from "date-fns";
+import { addSeconds, differenceInSeconds, isSameDay } from "date-fns";
 import { getTimeWorkedFromSecondsWorked } from "./getTimeWorkedFromSeconds";
 
 export type EventType =
@@ -19,8 +19,11 @@ export interface WorkdayEvent {
 }
 
 export interface Workday {
-	paidBreakDuration: number;
 	events: WorkdayEvent[];
+	/** In minutes. */
+	paidBreakDuration: number;
+	/** In hours. */
+	workdayLength: number;
 }
 
 export interface TrackingData {
@@ -30,6 +33,8 @@ export interface TrackingData {
 export interface Settings {
 	username: string;
 	paidBreakDuration: number;
+	// In hours.
+	workdayLength: number;
 }
 
 export interface Duration {
@@ -53,6 +58,76 @@ interface Tracker {
 	getTimeWorked(): Duration;
 	onChange(handler: (user: User, type: EventType) => void): void;
 	getCurrentWorkdayEvents(): WorkdayEvent[];
+	calculateWorkEndTime(): Date;
+	changeWorkdayLength(newWorkdayLength: number): void;
+	changePaidBreakDuration(newPaidBreakDuration: number): void;
+}
+
+function getSecondsWorked(currentWorkday: Workday | undefined): number {
+	if (currentWorkday === undefined) {
+		return 0;
+	}
+
+	// Only start-workday event has occurred.
+	if (currentWorkday.events.length === 1) {
+		const currentEvent = currentWorkday.events[0];
+		const secondsWorked = differenceInSeconds(new Date(), currentEvent.time);
+
+		return secondsWorked;
+	}
+
+	const secondsOnBreak = currentWorkday.events.reduce(
+		(secondsOnBreakSoFar, currentEvent, index, events) => {
+			const previousEvent = events[index - 1];
+			if (currentEvent.type === "end-break") {
+				secondsOnBreakSoFar += differenceInSeconds(
+					currentEvent.time,
+					previousEvent.time,
+				);
+			}
+
+			// If break is ongoing when getTimeWorked method is called we add the
+			// seconds elapsed since the start of the break.
+			if (currentEvent.type === "start-break" && index === events.length - 1) {
+				secondsOnBreakSoFar += differenceInSeconds(
+					new Date(),
+					currentEvent.time,
+				);
+			}
+
+			return secondsOnBreakSoFar;
+		},
+		0,
+	);
+
+	const secondsWorked =
+		currentWorkday.events.reduce(
+			(secondsWorkedSoFar, currentEvent, index, events) => {
+				const previousEvent = events[index - 1];
+				if (
+					currentEvent.type === "start-break" ||
+					currentEvent.type === "end-workday"
+				) {
+					secondsWorkedSoFar += differenceInSeconds(
+						currentEvent.time,
+						previousEvent.time,
+					);
+				}
+
+				// If the last event is end-break, measure time elapsed since it occurred.
+				if (currentEvent.type === "end-break" && index === events.length - 1) {
+					secondsWorkedSoFar += differenceInSeconds(
+						new Date(),
+						currentEvent.time,
+					);
+				}
+
+				return secondsWorkedSoFar;
+			},
+			0,
+		) + Math.min(currentWorkday.paidBreakDuration * 60, secondsOnBreak);
+
+	return secondsWorked;
 }
 
 export function createTracker(user: User): Tracker {
@@ -64,7 +139,7 @@ export function createTracker(user: User): Tracker {
 			onChangeCallback = callback;
 		},
 		startWorkday() {
-			if (hasWorkdayStarted(data)) {
+			if (hasWorkdayStarted(getLastWorkday(data))) {
 				throw new Error(
 					"Cannot start workday if current workday has not ended.",
 				);
@@ -72,18 +147,20 @@ export function createTracker(user: User): Tracker {
 
 			data.workdays.push({
 				paidBreakDuration: user.settings.paidBreakDuration,
+				workdayLength: user.settings.workdayLength,
 				events: [{ type: "start-workday", time: new Date() }],
 			});
+
 			onChangeCallback(user, "start-workday");
 		},
 		startBreak() {
-			if (!hasWorkdayStarted(data)) {
+			const currentWorkday = getLastWorkday(data);
+
+			if (!hasWorkdayStarted(currentWorkday)) {
 				throw new Error("Workday has not started.");
 			}
 
-			const currentWorkday = getLastWorkday(data);
-
-			currentWorkday.events.push({
+			currentWorkday!.events.push({
 				time: new Date(),
 				type: "start-break",
 			});
@@ -120,7 +197,7 @@ export function createTracker(user: User): Tracker {
 			onChangeCallback(user, "end-workday");
 		},
 		hasWorkdayStarted() {
-			return hasWorkdayStarted(data);
+			return hasWorkdayStarted(getLastWorkday(data));
 		},
 		canStartWorkday() {
 			const currentWorkday = getLastWorkday(data);
@@ -134,7 +211,7 @@ export function createTracker(user: User): Tracker {
 				return false;
 			}
 
-			return !hasWorkdayStarted(data);
+			return !hasWorkdayStarted(currentWorkday);
 		},
 		hasBreakStarted() {
 			const currentWorkday = getLastWorkday(data);
@@ -151,78 +228,8 @@ export function createTracker(user: User): Tracker {
 		},
 		getTimeWorked() {
 			const currentWorkday = getLastWorkday(data);
-			if (currentWorkday === undefined) {
-				return { hours: 0, minutes: 0, seconds: 0 };
-			}
 
-			if (currentWorkday.events.length === 1) {
-				const currentEvent = currentWorkday.events[0];
-				const secondsWorked = differenceInSeconds(
-					new Date(),
-					currentEvent.time,
-				);
-
-				return getTimeWorkedFromSecondsWorked(secondsWorked);
-			}
-
-			const secondsOnBreak = currentWorkday.events.reduce(
-				(secondsOnBreakSoFar, currentEvent, index, events) => {
-					const previousEvent = events[index - 1];
-					if (currentEvent.type === "end-break") {
-						secondsOnBreakSoFar += differenceInSeconds(
-							currentEvent.time,
-							previousEvent.time,
-						);
-					}
-
-					// If break is ongoing when getTimeWorked method is called we add the
-					// seconds elapsed since the start of the break.
-					if (
-						currentEvent.type === "start-break" &&
-						index === events.length - 1
-					) {
-						secondsOnBreakSoFar += differenceInSeconds(
-							new Date(),
-							currentEvent.time,
-						);
-					}
-
-					return secondsOnBreakSoFar;
-				},
-				0,
-			);
-
-			const secondsWorked =
-				currentWorkday.events.reduce(
-					(secondsWorkedSoFar, currentEvent, index, events) => {
-						const previousEvent = events[index - 1];
-						if (
-							currentEvent.type === "start-break" ||
-							currentEvent.type === "end-workday"
-						) {
-							secondsWorkedSoFar += differenceInSeconds(
-								currentEvent.time,
-								previousEvent.time,
-							);
-						}
-
-						// If the last event is end-break, measure time elapsed since it occurred.
-						if (
-							currentEvent.type === "end-break" &&
-							index === events.length - 1
-						) {
-							secondsWorkedSoFar += differenceInSeconds(
-								new Date(),
-								currentEvent.time,
-							);
-						}
-
-						return secondsWorkedSoFar;
-					},
-					0,
-				) + Math.min(currentWorkday.paidBreakDuration * 60, secondsOnBreak);
-
-			return getTimeWorkedFromSecondsWorked(secondsWorked);
+			return getTimeWorkedFromSecondsWorked(getSecondsWorked(currentWorkday));
 		},
 		getCurrentWorkdayEvents() {
 			if (data.workdays.length === 0) {
@@ -233,17 +240,43 @@ export function createTracker(user: User): Tracker {
 
 			return workdayEvents;
 		},
+		calculateWorkEndTime() {
+			const currentWorkday = getLastWorkday(data);
+			const workdayLength = hasWorkdayStarted(currentWorkday)
+				? currentWorkday!.workdayLength
+				: user.settings.workdayLength;
+			const workdayLengthInSeconds = workdayLength * 60 * 60;
+			const secondsWorked = getSecondsWorked(currentWorkday);
+
+			if (secondsWorked <= workdayLengthInSeconds) {
+				return addSeconds(new Date(), workdayLengthInSeconds - secondsWorked);
+			}
+
+			return new Date();
+		},
+		changeWorkdayLength(newWorkdayLength) {
+			user.settings.workdayLength = newWorkdayLength;
+			const currentWorkday = getLastWorkday(data);
+			if (hasWorkdayStarted(currentWorkday)) {
+				currentWorkday!.workdayLength = newWorkdayLength;
+			}
+		},
+		changePaidBreakDuration(newPaidBreakDuration) {
+			user.settings.paidBreakDuration = newPaidBreakDuration;
+			const currentWorkday = getLastWorkday(data);
+			if (hasWorkdayStarted(currentWorkday)) {
+				currentWorkday!.paidBreakDuration = newPaidBreakDuration;
+			}
+		},
 	};
 }
 
-function hasWorkdayStarted(data: TrackingData) {
-	const lastWorkday = getLastWorkday(data);
-
-	if (lastWorkday === undefined) {
+function hasWorkdayStarted(workday: Workday | undefined) {
+	if (workday === undefined) {
 		return false;
 	}
 
-	const lastEvent = lastWorkday.events[lastWorkday.events.length - 1];
+	const lastEvent = workday.events[workday.events.length - 1];
 	if (lastEvent === undefined) {
 		return false;
 	}
@@ -251,6 +284,6 @@ function hasWorkdayStarted(data: TrackingData) {
 	return lastEvent.type !== "end-workday";
 }
 
-function getLastWorkday(data: TrackingData): Workday {
+function getLastWorkday(data: TrackingData): Workday | undefined {
 	return data.workdays[data.workdays.length - 1];
 }

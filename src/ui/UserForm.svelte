@@ -1,11 +1,13 @@
 <script lang="ts">
 	import { getDatabase } from "../lib/database";
 	import Button from "./Button.svelte";
+	import Input from "./Input.svelte";
 
 	let { onSubmit } = $props();
 
 	let username = $state("");
 	let paidBreakDuration = $state(45);
+	let workdayLength = $state(8);
 </script>
 
 <form
@@ -15,6 +17,7 @@
 		const userId = await db.insertUser({
 			username,
 			paidBreakDuration,
+			workdayLength,
 		});
 
 		const user = await db.getUserById(userId);
@@ -24,46 +27,68 @@
 		}
 	}}
 >
-	<div class="inputRow">
+	<div>
 		<label>
 			<span>Username</span>
-			<input
+			<Input
 				bind:value={username}
 				placeholder="username"
 				required
 				type="text"
-			/>
-		</label>
-	</div>
-	<div class="inputRow">
-		<label>
-			<span title="Union mandated!">Daily paid break</span>
-			<input
-				bind:value={paidBreakDuration}
-				type="number"
-				placeholder="in minutes"
-				required
+				width="10rem"
 			/>
 		</label>
 	</div>
 	<div>
-		<Button type="submit">Start tracking!</Button>
+		<label>
+			<span title="Union mandated!">Daily paid break</span>
+			<Input
+				bind:value={paidBreakDuration}
+				type="number"
+				placeholder="in minutes"
+				required
+				width="10rem"
+			/>
+		</label>
+	</div>
+	<div>
+		<label>
+			<span title="In hours">Workday length</span>
+			<Input
+				bind:value={workdayLength}
+				type="number"
+				placeholder="in hours"
+				defaultValue="8"
+				required
+				width="10rem"
+			/>
+		</label>
+	</div>
+
+	<div class="buttonRow">
+		<Button type="submit">Start tracking</Button>
 	</div>
 </form>
 
 <style>
-	.inputRow {
-		margin-bottom: 0.4rem;
+	form {
+		width: 100%;
+		max-width: 24rem;
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+		margin-left: 0.7rem;
+		margin-right: 0.7rem;
 	}
 
 	label {
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
+		gap: 1rem;
 	}
 
-	input {
-		padding: 4px;
-		margin: 4px;
+	.buttonRow {
+		margin-top: 0.5rem;
 	}
 </style>

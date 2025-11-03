@@ -42,8 +42,9 @@
 
 <style>
 	ol {
+		width: 100%;
 		list-style-type: none;
-		background-color: #474747;
+		background-color: var(--color-gray-700);
 		padding: 0.6rem;
 		height: 300px;
 		overflow: scroll;
@@ -56,7 +57,7 @@
 		display: flex;
 		justify-content: flex-start;
 		gap: 0.5rem;
-		border-bottom: 1px solid #767676;
+		border-bottom: 1px solid var(--color-gray-500);
 	}
 
 	.time {
