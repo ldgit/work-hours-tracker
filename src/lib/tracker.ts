@@ -2,10 +2,7 @@ import { addSeconds, differenceInSeconds, isSameDay } from "date-fns";
 import { getTimeWorkedFromSecondsWorked } from "./getTimeWorkedFromSeconds";
 
 export type EventType =
-	| "start-workday"
-	| "end-workday"
-	| "start-break"
-	| "end-break";
+	"start-workday" | "end-workday" | "start-break" | "end-break";
 
 export interface User {
 	id: string;

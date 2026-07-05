@@ -1,6 +1,7 @@
 /// <reference types="@vitest/browser/providers/playwright" />
 
 import { configDefaults, defineConfig } from "vitest/config";
+import { playwright } from "@vitest/browser-playwright";
 
 export default defineConfig({
 	test: {
@@ -9,7 +10,7 @@ export default defineConfig({
 		testTimeout: 2000,
 		browser: {
 			enabled: true,
-			provider: "playwright",
+			provider: playwright(),
 			headless: true,
 			screenshotFailures: false,
 			// https://vitest.dev/guide/browser/playwright
